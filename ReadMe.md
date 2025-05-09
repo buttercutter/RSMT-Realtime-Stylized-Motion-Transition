@@ -1,10 +1,21 @@
-- # RSMT Model README
+# RSMT Model README
 
-  Welcome to the official repository for the paper "RSMT: Real-time Stylized Motion Transition for Characters". This repository's code framework is similar to the paper "Real-time Controllable Motion Transition for Characters," which is a state-of-the-art method in the field of real-time and offline transition motion generation. If you wish to reproduce the paper, you can start from this repository.
+Welcome to the official repository for the paper "RSMT: Real-time Stylized Motion Transition for Characters". This repository's code framework is similar to the paper "Real-time Controllable Motion Transition for Characters," which is a state-of-the-art method in the field of real-time and offline transition motion generation. If you wish to reproduce the paper, you can start from this repository.
 
-  ## Overview
+## Documentation
 
-  Our RSMT model is based on the 100STYLE dataset with the phase, which can be obtained by the trained phase manifold. You can download the 100STYLE dataset from https://www.ianxmason.com/100style/. The downloaded file should be set in `MotionData/100STYLE`. Before training our RSMT model, we show how to preprocess the 100STYLE dataset, then train the phase manifold, generate the phase vectors for all motion sequences, and lastly train the RSMT model, which consists of two components: a manifold and a sampler.
+For detailed documentation, please refer to the [`docs/`](docs/) directory:
+
+- [Installation Guide](docs/installation.md): How to set up the RSMT environment
+- [Dataset Preparation](docs/dataset_preparation.md): How to prepare the 100STYLE dataset for training
+- [Training Pipeline](docs/training_pipeline.md): Complete pipeline for training the RSMT model
+- [Inference Guide](docs/inference_guide.md): How to use the trained model for generating transitions
+- [Model Architecture](docs/model_architecture.md): Technical details of the RSMT model architecture
+- [Troubleshooting](docs/troubleshooting.md): Common issues and their solutions
+
+## Overview
+
+Our RSMT model is based on the 100STYLE dataset with the phase, which can be obtained by the trained phase manifold. You can download the 100STYLE dataset from https://www.ianxmason.com/100style/. The downloaded file should be set in `MotionData/100STYLE`. Before training our RSMT model, we show how to preprocess the 100STYLE dataset, then train the phase manifold, generate the phase vectors for all motion sequences, and lastly train the RSMT model, which consists of two components: a manifold and a sampler.
 
   ## Dataset Preprocessing
 
@@ -44,9 +55,9 @@
 
   This will plot two figures: 
 
-  ![phase](./RSMT-Realtime-Stylized-Motion-Transition/ReadMe.assets/phase.png) 
+  ![phase](./ReadMe.assets/phase.png) 
 
-  ![SAFB](./RSMT-Realtime-Stylized-Motion-Transition/ReadMe.assets/SAFB.png)
+  ![SAFB](./ReadMe.assets/SAFB.png)
 
   ## Generate Phase Vectors for the Dataset
 
@@ -137,6 +148,31 @@
   ```
   Xiangjun Tang, Linjun Wu, He Wang, Bo Hu, Xu Gong, Yuchen Liao, Songnan Li, Qilong Kou, and Xiaogang Jin. 2023. RSMT: Real-time Stylized Motion Transition for Characters. In Special Interest Group on Computer Graphics and Interactive Techniques Conference Conference Proceedings (SIGGRAPH ’23 Conference Proceedings), August 6–10, 2023, Los Angeles, CA, USA. ACM, New York, NY, USA, 10 pages. https://doi.org/10.1145/3588432.3591514.
   ```
+
+  ## Alternative Preprocessing Scripts
+
+  In addition to the standard preprocessing workflow using `process_dataset.py --preprocess`, we provide several alternative preprocessing scripts:
+
+  1. **Complete Preprocessing Script**: For a more robust preprocessing with detailed progress information:
+     ```bash
+     python preprocess_complete.py
+     ```
+     Or use the shell script with logging:
+     ```bash
+     bash run_preprocessing.sh
+     ```
+
+  2. **Simplified Preprocessing**: For a more streamlined preprocessing with fewer dependencies:
+     ```bash
+     python simple_preprocess.py
+     ```
+
+  3. **Diagnostic Scripts**: For inspecting and troubleshooting datasets:
+     ```bash
+     python inspect_dataset.py
+     ```
+
+  For more details on preprocessing options, refer to the [Dataset Preparation](docs/dataset_preparation.md) documentation.
 
   ## Home Page
 

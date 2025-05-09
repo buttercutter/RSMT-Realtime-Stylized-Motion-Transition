@@ -1,0 +1,151 @@
+=== Environment ===
+Python version: 3.12.3 (main, Feb  4 2025, 14:48:35) [GCC 13.3.0]
+Current directory: /home/barberb/RSMT-Realtime-Stylized-Motion-Transition
+PATH: /home/barberb/RSMT-Realtime-Stylized-Motion-Transition/.venv/bin:/home/barberb/.local/bin:/home/barberb/.nvm/versions/node/v22.5.1/bin:/home/barberb/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/barberb/.vscode-insiders/extensions/ms-python.debugpy-2025.6.0-linux-x64/bundled/scripts/noConfigScripts:/home/barberb/.config/Code - Insiders/User/globalStorage/github.copilot-chat/debugCommand
+
+=== File Structure ===
+100STYLE directory exists: True
+Contents of ./MotionData/100STYLE/:
+  - OnHeels
+  - Stiff
+  - Proud
+  - RaisedRightArm
+  - WalkingStickRight
+  - Morris
+  - BigSteps
+  - PigeonToed
+  - WhirlArms
+  - Waving
+  - Depressed
+  - HighKnees
+  - StartStop
+  - Balance
+  - DuckFoot
+  - ArmsBySide
+  - Superman
+  - ShieldedLeft
+  - SwingArmsRound
+  - Aeroplane
+  - TogetherStep
+  - Monk
+  - Neutral
+  - Star
+  - PendulumHands
+  - Angry
+  - OnPhoneLeft
+  - Zombie
+  - Robot
+  - KarateChop
+  - Heavyset
+  - FlickLegs
+  - GracefulArms
+  - Lunge
+  - Akimbo
+  - Swimming
+  - LeftHop
+  - Crouched
+  - SpinAntiClock
+  - ArmsAboveHead
+  - SpinClock
+  - ShieldedRight
+  - Kick
+  - motion_statistics.dat
+  - BouncyRight
+  - CrowdAvoidance
+  - Tiptoe
+  - HandsBetweenLegs
+  - Dinosaur
+  - LimpLeft
+  - Dataset_List.csv
+  - InTheDark
+  - HandsInPockets
+  - WideLegs
+  - DragRightLeg
+  - Drunk
+  - March
+  - OnToesBentForward
+  - BentForward
+  - Cat
+  - LimpRight
+  - LeanBack
+  - LawnMower
+  - SwingShoulders
+  - WalkingStickLeft
+  - WildArms
+  - RightHop
+  - Flapping
+  - DragLeftLeg
+  - RaisedLeftArm
+  - Punch
+  - CrossOver
+  - Sweep
+  - Elated
+  - Teapot
+  - BeatChest
+  - TwoFootJump
+  - OnPhoneRight
+  - LegsApart
+  - BentKnees
+  - Skip
+  - Frame_Cuts.csv
+  - Rushed
+  - WiggleHips
+  - Penguin
+  - FairySteps
+  - LookUp
+  - SlideFeet
+  - Swat
+  - OnToesCrouched
+  - ArmsBehindBack
+  - Quail
+  - LeanLeft
+  - ArmsFolded
+  - LeanRight
+  - Followed
+  - Chicken
+  - Roadrunner
+  - BouncyLeft
+  - Rocket
+  - Old
+  - WildLegs
+  - Strutting
+
+=== Libraries ===
+NumPy version: 2.2.5
+Pandas version: 2.2.3
+PyTorch version: 2.7.0+cu126
+CUDA available: True
+
+=== Module Import Test ===
+Trying to import src.Datasets.Style100Processor...
+✗ Error importing Style100Processor: No module named 'pytorch3d'
+
+Trying to import src.utils.BVH_mod...
+✗ Error importing BVH_mod: No module named 'pytorch3d'
+
+=== Frame_Cuts.csv Check ===
+Successfully loaded Frame_Cuts.csv
+Number of rows: 100
+Columns: STYLE_NAME, BR_START, BR_STOP, BW_START, BW_STOP, FR_START, FR_STOP, FW_START, FW_STOP, ID_START, ID_STOP, SR_START, SR_STOP, SW_START, SW_STOP, TR1_START, TR1_STOP, TR2_START, TR2_STOP, TR3_START, TR3_STOP
+First 3 rows:
+  STYLE_NAME  BR_START  BR_STOP  ...  TR2_STOP  TR3_START  TR3_STOP
+0  Aeroplane       318     5593  ...       NaN        NaN       NaN
+1     Akimbo       425     4816  ...       NaN        NaN       NaN
+2      Angry       440     3102  ...       NaN        NaN       NaN
+
+[3 rows x 21 columns]
+
+=== BVH File Check ===
+BVH file exists: ./MotionData/100STYLE/Aeroplane/Aeroplane_BR.bvh
+File size: 4497578 bytes
+First 10 lines of the BVH file:
+  HIERARCHY
+  ROOT Hips
+  {
+  OFFSET 0.000000 0.000000 0.000000
+  CHANNELS 6 Xposition Yposition Zposition Yrotation Xrotation Zrotation
+  JOINT Chest
+  {
+  OFFSET 0.000000 12.953391 -0.028419
+  CHANNELS 3 Yrotation Xrotation Zrotation
+  JOINT Chest2
