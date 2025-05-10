@@ -17,7 +17,7 @@ train/
 test2/
 *.blend
 *.rar
-*.bvh
+# *.bvh
 Experiment
 *.fbx
 100STYLE
