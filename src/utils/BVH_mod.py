@@ -5,7 +5,16 @@ import src.geometry.inverse_kinematics as ik
 import torch
 from src.geometry.vector import find_secondary_axis
 from np_vector import euler_to_quat,remove_quat_discontinuities,quat_to_euler
-import pytorch3d.transforms as trans
+
+# Use our custom compatibility layer for pytorch3d transforms
+try:
+    # First try to import from pytorch3d if available
+    import pytorch3d.transforms as trans
+    print("Using installed PyTorch3D library")
+except ImportError:
+    # Fall back to our compatibility layer
+    import src.geometry.pytorch3d_transforms as trans
+    print("Using PyTorch3D compatibility layer")
 
 
 channelmap = {

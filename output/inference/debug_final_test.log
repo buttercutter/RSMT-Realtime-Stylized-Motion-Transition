@@ -1,0 +1,35 @@
+2025-05-09 16:51:49,077 - debug_final_test - INFO - Python sys.path: ['/home/barberb/RSMT-Realtime-Stylized-Motion-Transition', '/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/home/barberb/.local/lib/python3.12/site-packages', '/home/barberb/ipfs_accelerate_py', '__editable__.ipfs_kit_py-0.2.0.finder.__path_hook__', '/usr/local/lib/python3.12/dist-packages', '/usr/lib/python3/dist-packages', '.', '/home/barberb/RSMT-Realtime-Stylized-Motion-Transition']
+2025-05-09 16:51:49,077 - debug_final_test - INFO - Created output directory: ./output/inference/final_test
+2025-05-09 16:51:49,077 - debug_final_test - INFO - 
+===== RSMT FINAL IMPLEMENTATION TEST =====
+2025-05-09 16:51:49,077 - debug_final_test - INFO - Test started at: 2025-05-09 16:51:49
+2025-05-09 16:51:49,078 - debug_final_test - INFO - Testing required module imports...
+2025-05-09 16:51:49,078 - debug_final_test - INFO - Testing motion_decoder import...
+2025-05-09 16:51:49,085 - debug_final_test - INFO - Successfully imported motion_decoder
+2025-05-09 16:51:49,085 - debug_final_test - INFO - Testing bvh_writer import...
+2025-05-09 16:51:49,096 - debug_final_test - ERROR - Error importing bvh_writer: No module named 'pytorch3d'
+2025-05-09 16:51:49,098 - debug_final_test - ERROR - Traceback (most recent call last):
+  File "/home/barberb/RSMT-Realtime-Stylized-Motion-Transition/src/utils/bvh_writer.py", line 14, in <module>
+    from src.utils import BVH_mod
+  File "/home/barberb/RSMT-Realtime-Stylized-Motion-Transition/src/utils/BVH_mod.py", line 4, in <module>
+    import src.geometry.inverse_kinematics as ik
+  File "/home/barberb/RSMT-Realtime-Stylized-Motion-Transition/src/geometry/inverse_kinematics.py", line 5, in <module>
+    from pytorch3d.transforms import quaternion_multiply, quaternion_apply, quaternion_invert
+ModuleNotFoundError: No module named 'pytorch3d'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/barberb/RSMT-Realtime-Stylized-Motion-Transition/debug_final_test.py", line 206, in test_bvh_writer_import
+    spec.loader.exec_module(module)
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/barberb/RSMT-Realtime-Stylized-Motion-Transition/src/utils/bvh_writer.py", line 18, in <module>
+    from src.utils import BVH_mod
+  File "/home/barberb/RSMT-Realtime-Stylized-Motion-Transition/src/utils/BVH_mod.py", line 4, in <module>
+    import src.geometry.inverse_kinematics as ik
+  File "/home/barberb/RSMT-Realtime-Stylized-Motion-Transition/src/geometry/inverse_kinematics.py", line 5, in <module>
+    from pytorch3d.transforms import quaternion_multiply, quaternion_apply, quaternion_invert
+ModuleNotFoundError: No module named 'pytorch3d'
+
+2025-05-09 16:51:49,099 - debug_final_test - ERROR - Required module imports failed, test cannot proceed
