@@ -98,6 +98,22 @@ python -c "from src.Datasets.Style100Processor import save_skeleton; save_skelet
 
 ## Inference Issues
 
+### PyTorch Type Errors in Motion Decoder
+
+**Issue**: Error `sin(): argument 'input' (position 1) must be Tensor, not float` when running the pipeline.
+
+**Solutions**:
+1. Make sure to convert float values to PyTorch tensors before using PyTorch math functions:
+   ```python
+   # Incorrect:
+   value = torch.sin(2.0 * float_value)
+   
+   # Correct:
+   value = torch.sin(torch.tensor(2.0 * float_value, device=device))
+   ```
+2. This error commonly occurs in the motion_decoder.py when calculating angles or positions.
+3. Check that all inputs to PyTorch math functions (sin, cos, etc.) are tensor objects, not Python floats.
+
 ### Foot Skating in Generated Animations
 
 **Issue**: Character feet slide on the ground during animations.

@@ -146,9 +146,9 @@ def decode_phase_to_motion(phase_vectors, manifold_model=None, skeleton_data=Non
             ], device=device).reshape(1, 3))
             
             # Create an angle based on other phase components
-            angle = 0.1 * torch.sin(2.0 * (
-                phase[3].item() if phase.shape[0] > 3 else 0.0
-            ))
+            # Convert float to tensor before using torch.sin
+            phase_val = torch.tensor(2.0 * (phase[3].item() if phase.shape[0] > 3 else 0.0), device=device)
+            angle = 0.1 * torch.sin(phase_val)
             
             # Convert axis-angle to quaternion
             axis_angle = axis * angle
@@ -158,8 +158,10 @@ def decode_phase_to_motion(phase_vectors, manifold_model=None, skeleton_data=Non
             local_rotations[i, j] = quat.reshape(-1)
         
         # Vary hip position based on phase
-        hip_positions[i, 0, 0] = 0.1 * torch.sin(phase[0].item() if phase.shape[0] > 0 else 0.0)
-        hip_positions[i, 0, 1] = 0.05 * torch.cos(phase[1].item() if phase.shape[0] > 1 else 0.0)
+        phase_x = torch.tensor(phase[0].item() if phase.shape[0] > 0 else 0.0, device=device)
+        phase_y = torch.tensor(phase[1].item() if phase.shape[0] > 1 else 0.0, device=device)
+        hip_positions[i, 0, 0] = 0.1 * torch.sin(phase_x)
+        hip_positions[i, 0, 1] = 0.05 * torch.cos(phase_y)
         hip_positions[i, 0, 2] = 0.0
     
     # Try to use forward kinematics from the imported module if available

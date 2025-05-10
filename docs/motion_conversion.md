@@ -21,6 +21,22 @@ The motion decoder (`src/utils/motion_decoder.py`) takes phase vectors and produ
 
 It implements forward kinematics to convert from local joint rotations to global positions, ensuring proper hierarchical transformations through the skeleton.
 
+#### Important Implementation Notes
+
+1. **PyTorch Tensor Handling**: The motion decoder uses PyTorch tensor operations for calculations. When using PyTorch math functions like `torch.sin()` or `torch.cos()`, inputs must be tensors, not Python scalar values:
+   ```python
+   # Correct:
+   phase_tensor = torch.tensor(phase_value, device=device)
+   result = torch.sin(phase_tensor)
+   
+   # Incorrect - will cause TypeError:
+   result = torch.sin(phase_value)  # if phase_value is a float
+   ```
+
+2. **Forward Kinematics**: The decoder applies a hierarchical transformation from joint-local rotations to global positions, respecting the skeleton's hierarchy.
+
+3. **Device Management**: All tensor operations maintain consistent device placement (CPU/CUDA) to avoid unnecessary transfers.
+
 ### BVH Writer
 
 The BVH writer (`src/utils/bvh_writer.py`) handles:

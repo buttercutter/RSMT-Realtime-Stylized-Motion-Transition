@@ -9,7 +9,9 @@ Welcome to the documentation for RSMT (Real-time Stylized Motion Transition for 
 3. [Training Pipeline](training_pipeline.md) - Complete pipeline for training the RSMT model
 4. [Inference Guide](inference_guide.md) - How to use the trained model for generating transitions
 5. [Model Architecture](model_architecture.md) - Technical details of the RSMT model architecture
-6. [Troubleshooting](troubleshooting.md) - Common issues and their solutions
+6. [Motion Conversion](motion_conversion.md) - Converting phase vectors to BVH animations
+7. [Testing BVH Pipeline](testing_bvh_pipeline.md) - Testing the BVH generation functionality
+8. [Troubleshooting](troubleshooting.md) - Common issues and their solutions
 
 ## Overview
 
