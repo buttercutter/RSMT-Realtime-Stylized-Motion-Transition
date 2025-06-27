@@ -242,7 +242,7 @@
                 </div>
                 <div class="metric">
                     <span>Animation Speed:</span>
-                    <span id="animation-speed">1.0x</span>
+                    <span id="animation-speed">0.3x</span>
                 </div>
                 <div class="metric">
                     <span>Transition State:</span>
@@ -255,6 +255,36 @@
                 <div class="metric">
                     <span>Bone Connections:</span>
                     <span id="bone-count">13</span>
+                </div>
+            </div>
+            
+            <!-- Animation Controls -->
+            <div class="controls" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                <h3 style="margin: 0 0 10px 0; color: #fff;">Animation Controls</h3>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <button onclick="toggleAnimation()" id="play-pause-btn" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Pause</button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="color: #fff;">Speed:</label>
+                        <input type="range" id="speed-slider" min="0.1" max="3.0" step="0.1" value="0.3" style="width: 100px;" onchange="updateAnimationSpeed(this.value)">
+                        <span id="speed-value" style="color: #fff; min-width: 40px;">0.3x</span>
+                    </div>
+                    <button onclick="resetAnimation()" style="padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">Reset</button>
+                    <button onclick="debugFrame()" style="padding: 8px 16px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer;">Debug Frame</button>
+                    <button onclick="fixOrientation()" style="padding: 8px 16px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;">Fix Orientation</button>
+                    <button onclick="flipDirection()" style="padding: 8px 16px; background: #E91E63; color: white; border: none; border-radius: 4px; cursor: pointer;">Flip Direction</button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="color: #fff;">Joint Intensity:</label>
+                        <input type="range" id="intensity-slider" min="0.01" max="1.0" step="0.01" value="0.1" style="width: 100px;" onchange="updateJointIntensity(this.value)">
+                        <span id="intensity-value" style="color: #fff; min-width: 40px;">0.1</span>
+                    </div>
+                    <button onclick="toggleSimpleMode()" id="simple-mode-btn" style="padding: 8px 16px; background: #607D8B; color: white; border: none; border-radius: 4px; cursor: pointer;">Simple Mode</button>
+                    <button onclick="debugBVH()" style="padding: 8px 16px; background: #795548; color: white; border: none; border-radius: 4px; cursor: pointer;">Debug BVH</button>
+                    <button onclick="resetCharacterDirection()" style="padding: 8px 16px; background: #ff5722; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;">Reset Direction</button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="color: #fff;">Root Constraint:</label>
+                        <input type="range" id="constraint-slider" min="0.1" max="3.14" step="0.1" value="0.78" style="width: 100px;" onchange="updateRootConstraint(this.value)">
+                        <span id="constraint-value" style="color: #fff; min-width: 60px;">45°</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -277,11 +307,12 @@
         // Global variables for animation and BVH data
         let isPlaying = true;
         let currentStyle = 'neutral';
-        let animationSpeed = 1.0;
+        let animationSpeed = 0.3; // Much slower default speed
         let isWireframe = false;
         let bvhData = {};
         let currentAnimation = 'neutral_reference.bvh';
         let animationFrame = 0;
+        let bvhScale = 0.01; // Scale factor for BVH units
         
         // Global THREE.js objects (will be initialized in try block)
         let scene, camera, renderer, skeletonGroup;
@@ -413,47 +444,45 @@
                 emissive: 0x001122
             });
             
-            // ===== CORRECT BVH-MATCHING SKELETON =====
-            // This skeleton matches the actual BVH file structure from 100STYLE dataset
+            // ===== CORRECT BVH SKELETON FROM ACTUAL 100STYLE FILES =====
+            // This matches the EXACT structure from Neutral_FW.bvh
             const bvhJoints = {
-                // Root joint (world position)
-                'Hips': { offset: [0.00, 0.00, 0.00], parent: null },
+                // Root joint (world position) - 6 channels: pos + rot
+                'Hips': { offset: [0.000000, 0.000000, 0.000000], parent: null },
                 
-                // Spine chain
-                'Chest': { offset: [0.00, 12.95, -0.03], parent: 'Hips' },
-                'Chest2': { offset: [0.00, 10.28, 0.05], parent: 'Chest' },
-                'Chest3': { offset: [0.00, 9.29, 0.00], parent: 'Chest2' },
-                'Chest4': { offset: [0.00, 9.29, 0.00], parent: 'Chest3' },
-                'Neck': { offset: [0.00, 13.30, 0.00], parent: 'Chest4' },
-                'Head': { offset: [0.00, 8.96, 0.10], parent: 'Neck' },
+                // Spine chain - exact offsets from BVH
+                'Chest': { offset: [0.000000, 12.953391, -0.028419], parent: 'Hips' },
+                'Chest2': { offset: [0.000000, 10.280254, 0.051622], parent: 'Chest' },
+                'Chest3': { offset: [0.000000, 9.287180, 0.000000], parent: 'Chest2' },
+                'Chest4': { offset: [0.000000, 9.287180, 0.000000], parent: 'Chest3' },
+                'Neck': { offset: [0.000000, 13.296264, 0.000000], parent: 'Chest4' },
+                'Head': { offset: [0.000000, 8.959264, 0.099003], parent: 'Neck' },
                 
-                // Right arm chain
-                'RightCollar': { offset: [-3.19, 7.45, 0.00], parent: 'Chest4' },
-                'RightShoulder': { offset: [-15.79, 0.00, 0.00], parent: 'RightCollar' },
-                'RightElbow': { offset: [-31.15, 0.00, 0.00], parent: 'RightShoulder' },
-                'RightWrist': { offset: [-25.54, 0.00, 0.00], parent: 'RightElbow' },
+                // Right arm chain - exact offsets from BVH
+                'RightCollar': { offset: [-3.193511, 7.451388, 0.000000], parent: 'Chest4' },
+                'RightShoulder': { offset: [-15.792092, 0.000000, 0.000000], parent: 'RightCollar' },
+                'RightElbow': { offset: [-31.151839, 0.000000, 0.000000], parent: 'RightShoulder' },
+                'RightWrist': { offset: [-25.536298, 0.000000, 0.002321], parent: 'RightElbow' },
                 
-                // Left arm chain
-                'LeftCollar': { offset: [3.19, 7.45, 0.00], parent: 'Chest4' },
-                'LeftShoulder': { offset: [15.79, 0.00, 0.00], parent: 'LeftCollar' },
-                'LeftElbow': { offset: [31.15, 0.00, 0.00], parent: 'LeftShoulder' },
-                'LeftWrist': { offset: [25.54, 0.00, 0.00], parent: 'LeftElbow' },
+                // Left arm chain - will be mirrored
+                'LeftCollar': { offset: [3.193511, 7.451388, 0.000000], parent: 'Chest4' },
+                'LeftShoulder': { offset: [15.792092, 0.000000, 0.000000], parent: 'LeftCollar' },
+                'LeftElbow': { offset: [31.151839, 0.000000, 0.000000], parent: 'LeftShoulder' },
+                'LeftWrist': { offset: [25.536298, 0.000000, 0.002321], parent: 'LeftElbow' },
                 
-                // Right leg chain
-                'RightHip': { offset: [-10.75, 0.14, 0.01], parent: 'Hips' },
-                'RightKnee': { offset: [0.00, -43.74, -0.01], parent: 'RightHip' },
-                'RightAnkle': { offset: [0.00, -43.21, 0.09], parent: 'RightKnee' },
-                'RightToe': { offset: [0.00, -9.70, 19.15], parent: 'RightAnkle' },
+                // Right leg chain - exact offsets from BVH
+                'RightHip': { offset: [-10.745749, 0.139252, 0.014209], parent: 'Hips' },
+                'RightKnee': { offset: [0.000000, -43.743899, -0.006071], parent: 'RightHip' },
+                'RightAnkle': { offset: [0.000000, -43.214199, 0.089931], parent: 'RightKnee' },
+                'RightToe': { offset: [0.000000, -9.699830, 19.151588], parent: 'RightAnkle' },
                 
-                // Left leg chain
-                'LeftHip': { offset: [10.75, 0.14, 0.01], parent: 'Hips' },
-                'LeftKnee': { offset: [0.00, -43.74, -0.01], parent: 'LeftHip' },
-                'LeftAnkle': { offset: [0.00, -43.21, 0.09], parent: 'LeftKnee' },
-                'LeftToe': { offset: [0.00, -9.70, 19.15], parent: 'LeftAnkle' }
+                // Left leg chain - mirrored from BVH
+                'LeftHip': { offset: [10.745749, 0.139252, 0.014209], parent: 'Hips' },
+                'LeftKnee': { offset: [0.000000, -43.743899, -0.006071], parent: 'LeftHip' },
+                'LeftAnkle': { offset: [0.000000, -43.214199, 0.089931], parent: 'LeftKnee' },
+                'LeftToe': { offset: [0.000000, -9.699830, 19.151588], parent: 'LeftAnkle' }
             };
             
-            // Scale factor to convert BVH units to reasonable display size
-            const bvhScale = 0.015; // Smaller scale for better proportions
             
             // Create hierarchical skeleton with proper parent-child relationships
             function createHierarchicalSkeleton(joints) {
@@ -558,9 +587,26 @@
             
             scene.add(skeletonGroup);
             
-            // Fix BVH coordinate system - ensure character appears right-side up
-            // Many BVH files use different coordinate conventions than THREE.js
+            // DEBUG: Add a test cube to verify the scene is rendering
+            const testGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            const testMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const testCube = new THREE.Mesh(testGeometry, testMaterial);
+            testCube.position.set(2, 1, 0); // Position it away from skeleton
+            testCube.name = 'testCube';
+            scene.add(testCube);
+            
+            // DEBUG: Add a larger test sphere at skeleton origin
+            const originGeometry = new THREE.SphereGeometry(0.1, 12, 12);
+            const originMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff });
+            const originSphere = new THREE.Mesh(originGeometry, originMaterial);
+            originSphere.position.set(0, 0, 0); // At origin where skeleton should be
+            originSphere.name = 'originSphere';
+            scene.add(originSphere);
+            
+            // Let BVH data control the orientation - no manual corrections
             skeletonGroup.position.y = 0; // Start at ground level
+            skeletonGroup.rotation.set(0, 0, 0); // No base rotation
+            skeletonGroup.rotation.order = 'YXZ'; // Match BVH rotation order
             
             // Update skeleton metrics
             document.getElementById('joint-count').textContent = Object.keys(jointMeshes).length;
@@ -582,6 +628,188 @@
                 graceful: { speed: 0.9, intensity: 0.8, bounce: 0.2, description: 'Smooth, elegant' },
                 robotic: { speed: 1.0, intensity: 1.0, bounce: 0.0, description: 'Mechanical, stiff' }
             };
+            
+            // Animation control functions
+            function toggleAnimation() {
+                isPlaying = !isPlaying;
+                const btn = document.getElementById('play-pause-btn');
+                btn.textContent = isPlaying ? 'Pause' : 'Play';
+                btn.style.background = isPlaying ? '#4CAF50' : '#f44336';
+            }
+            
+            function updateAnimationSpeed(value) {
+                animationSpeed = parseFloat(value);
+                document.getElementById('speed-value').textContent = value + 'x';
+                document.getElementById('animation-speed').textContent = value + 'x';
+                console.log('Animation speed changed to:', animationSpeed);
+            }
+            
+            function resetAnimation() {
+                animationFrame = 0;
+                currentFrame = 0;
+                console.log('Animation reset');
+            }
+            
+            function debugFrame() {
+                if (bvhData[currentAnimation] && bvhData[currentAnimation].frames.length > 0) {
+                    const frames = bvhData[currentAnimation].frames;
+                    const frameIndex = Math.floor(animationFrame * animationSpeed) % frames.length;
+                    const frameData = frames[frameIndex];
+                    
+                    console.log('🔍 Debug Frame Info:');
+                    console.log('Current frame:', frameIndex);
+                    console.log('Frame data length:', frameData.length);
+                    console.log('First 12 values (root pos + rot):', frameData.slice(0, 12));
+                    console.log('Animation speed:', animationSpeed);
+                    console.log('Total frames:', frames.length);
+                    console.log('Skeleton rotation:', skeletonGroup.rotation);
+                    console.log('Skeleton position:', skeletonGroup.position);
+                    
+                    // Log some joint rotations
+                    let channelIndex = 6; // Skip root pos and rot
+                    console.log('Joint rotations:');
+                    bvhJointOrder.slice(0, 3).forEach(jointName => {
+                        if (channelIndex + 2 < frameData.length) {
+                            const rotY = frameData[channelIndex++];
+                            const rotX = frameData[channelIndex++];
+                            const rotZ = frameData[channelIndex++];
+                            console.log(`${jointName}: Y=${rotY.toFixed(2)}, X=${rotX.toFixed(2)}, Z=${rotZ.toFixed(2)}`);
+                        }
+                    });
+                }
+            }
+            
+            let orientationMode = 0;
+            function fixOrientation() {
+                orientationMode = (orientationMode + 1) % 8; // Even more options
+                
+                // Try different base orientations
+                switch(orientationMode) {
+                    case 0:
+                        skeletonGroup.rotation.set(Math.PI, 0, Math.PI);
+                        console.log('Orientation Mode 0: X+Z flip (default)');
+                        break;
+                    case 1:
+                        skeletonGroup.rotation.set(0, 0, Math.PI);
+                        console.log('Orientation Mode 1: Z-axis flip only');
+                        break;
+                    case 2:
+                        skeletonGroup.rotation.set(Math.PI, 0, 0);
+                        console.log('Orientation Mode 2: X-axis flip only');
+                        break;
+                    case 3:
+                        skeletonGroup.rotation.set(0, Math.PI, 0);
+                        console.log('Orientation Mode 3: Y-axis flip only');
+                        break;
+                    case 4:
+                        skeletonGroup.rotation.set(0, 0, 0);
+                        console.log('Orientation Mode 4: No rotation');
+                        break;
+                    case 5:
+                        skeletonGroup.rotation.set(Math.PI, Math.PI, 0);
+                        console.log('Orientation Mode 5: X+Y flip');
+                        break;
+                    case 6:
+                        skeletonGroup.rotation.set(0, Math.PI, Math.PI);
+                        console.log('Orientation Mode 6: Y+Z flip');
+                        break;
+                    case 7:
+                        skeletonGroup.rotation.set(-Math.PI, 0, -Math.PI);
+                        console.log('Orientation Mode 7: Negative X+Z flip');
+                        break;
+                }
+                
+                console.log('New skeleton rotation:', skeletonGroup.rotation);
+            }
+            
+            let directionMultiplier = 1;
+            function flipDirection() {
+                directionMultiplier *= -1;
+                console.log('Direction multiplier:', directionMultiplier);
+            }
+            
+            // Make direction multiplier global
+            window.directionMultiplier = directionMultiplier;
+            
+            let jointIntensity = 0.1;
+            function updateJointIntensity(value) {
+                jointIntensity = parseFloat(value);
+                document.getElementById('intensity-value').textContent = value;
+                console.log('Joint intensity changed to:', jointIntensity);
+            }
+            
+            // Make intensity global
+            window.jointIntensity = jointIntensity;
+            
+            let rootConstraint = Math.PI / 4; // 45 degrees default
+            function updateRootConstraint(value) {
+                rootConstraint = parseFloat(value);
+                const degrees = Math.round(rootConstraint * 180 / Math.PI);
+                document.getElementById('constraint-value').textContent = degrees + '°';
+                console.log('Root rotation constraint changed to:', degrees, 'degrees');
+            }
+            
+            // Make constraint global
+            window.rootConstraint = rootConstraint;
+            
+            let simpleMode = false;
+            function toggleSimpleMode() {
+                simpleMode = !simpleMode;
+                const btn = document.getElementById('simple-mode-btn');
+                btn.textContent = simpleMode ? 'Full Mode' : 'Simple Mode';
+                btn.style.background = simpleMode ? '#4CAF50' : '#607D8B';
+                console.log('Simple mode:', simpleMode);
+            }
+            
+            function debugBVH() {
+                console.log('🔍 BVH Debug Information:');
+                console.log('Current animation:', currentAnimation);
+                console.log('BVH data loaded:', Object.keys(bvhData));
+                
+                if (bvhData[currentAnimation]) {
+                    const data = bvhData[currentAnimation];
+                    console.log('Frames:', data.frames?.length || 0);
+                    console.log('Frame time:', data.frameTime);
+                    console.log('Channel count:', data.channelCount);
+                    
+                    if (data.frames && data.frames.length > 0) {
+                        console.log('First frame data:', data.frames[0].slice(0, 12));
+                        console.log('Sample middle frame:', data.frames[Math.floor(data.frames.length/2)].slice(0, 12));
+                    }
+                } else {
+                    console.log('❌ No BVH data loaded for:', currentAnimation);
+                }
+                
+                console.log('Skeleton joints created:', Object.keys(jointMeshes));
+                console.log('Skeleton group position:', skeletonGroup.position);
+                console.log('Skeleton group rotation:', skeletonGroup.rotation);
+                console.log('Animation frame:', animationFrame);
+                console.log('Animation speed:', animationSpeed);
+                console.log('Is playing:', isPlaying);
+            }
+            
+            function resetCharacterDirection() {
+                console.log('🔄 Resetting character direction');
+                window.characterHeading = 0;
+                animationFrame = 0; // Reset animation to beginning
+                if (skeletonGroup) {
+                    skeletonGroup.rotation.set(0, 0, 0); // Reset all rotations
+                    skeletonGroup.position.set(0, 0, 0); // Reset position too
+                }
+            }
+            
+            // Make functions global for onclick handlers
+            window.toggleAnimation = toggleAnimation;
+            window.updateAnimationSpeed = updateAnimationSpeed;
+            window.resetAnimation = resetAnimation;
+            window.debugFrame = debugFrame;
+            window.fixOrientation = fixOrientation;
+            window.flipDirection = flipDirection;
+            window.updateJointIntensity = updateJointIntensity;
+            window.toggleSimpleMode = toggleSimpleMode;
+            window.debugBVH = debugBVH;
+            window.updateRootConstraint = updateRootConstraint;
+            window.resetCharacterDirection = resetCharacterDirection;
             
             // Animation loop
             function animate() {
@@ -643,7 +871,17 @@
                 }
                 
                 // Don't rotate the scene - let BVH data control all rotation
-                // skeletonGroup.rotation.y += 0.005; // REMOVED: This was causing spinning
+                
+                // DEBUG: Rotate test objects to show animation is working
+                const testCube = scene.getObjectByName('testCube');
+                const originSphere = scene.getObjectByName('originSphere');
+                if (testCube) {
+                    testCube.rotation.x += 0.01;
+                    testCube.rotation.y += 0.01;
+                }
+                if (originSphere) {
+                    originSphere.rotation.y += 0.02;
+                }
                 
                 renderer.render(scene, camera);
             }
@@ -869,18 +1107,54 @@
             const rootRotY = (frameData[channelIndex++] || 0) * Math.PI / 180;
             const rootRotZ = (frameData[channelIndex++] || 0) * Math.PI / 180;
             
-            // Apply root transformation to skeleton (with BVH coordinate conversion)
+            // Apply root transformation to skeleton - use BVH data naturally
             if (skeletonGroup) {
-                // Position: scale down and adjust coordinate system
+                // DEBUG: Log the values we're getting (more detailed)
+                if (animationFrame % 60 === 0) { // Log every 60 frames
+                    console.log('🎬 BVH Animation Debug:', {
+                        frame: animationFrame,
+                        rootPos: { x: rootX.toFixed(2), y: rootY.toFixed(2), z: rootZ.toFixed(2) },
+                        rootRotDeg: { 
+                            x: (rootRotX*180/Math.PI).toFixed(1), 
+                            y: (rootRotY*180/Math.PI).toFixed(1), 
+                            z: (rootRotZ*180/Math.PI).toFixed(1) 
+                        },
+                        rootRotRad: { x: rootRotX.toFixed(3), y: rootRotY.toFixed(3), z: rootRotZ.toFixed(3) },
+                        skeletonPos: {
+                            x: skeletonGroup.position.x.toFixed(3),
+                            y: skeletonGroup.position.y.toFixed(3), 
+                            z: skeletonGroup.position.z.toFixed(3)
+                        },
+                        bvhScale: bvhScale,
+                        jointCount: Object.keys(jointMeshes).length
+                    });
+                }
+                
+                // Position: scale BVH units to display size
                 skeletonGroup.position.set(
-                    rootX * 0.01,     // X: left/right
-                    rootY * 0.01,     // Y: up/down (keep as-is for now)
-                    -rootZ * 0.01     // Z: forward/back (flip for THREE.js)
+                    rootX * bvhScale,      // X: as-is from BVH
+                    rootY * bvhScale,      // Y: as-is from BVH (let it control height)
+                    rootZ * bvhScale       // Z: as-is from BVH  
                 );
                 
-                // Rotation: DON'T apply to entire skeleton - this was causing the spinning!
-                // skeletonGroup.rotation.set(-rootRotX, rootRotY, -rootRotZ);
-                // Individual joint rotations will be applied below instead
+                // Apply BVH root transformation - FIXED SPINNING ISSUE
+                skeletonGroup.rotation.order = 'YXZ'; // BVH rotation order
+                
+                // Use root constraint to limit rotation ranges
+                const maxRootRot = window.rootConstraint || Math.PI / 4; // 45 degrees default
+                
+                // Apply rotation directly but with constraints to prevent spinning
+                // Don't accumulate - just use current frame values with limits
+                const constrainedRotX = Math.max(-maxRootRot, Math.min(maxRootRot, rootRotX));
+                const constrainedRotY = Math.max(-maxRootRot, Math.min(maxRootRot, rootRotY)); 
+                const constrainedRotZ = Math.max(-maxRootRot, Math.min(maxRootRot, rootRotZ));
+                
+                // Apply constrained rotations directly from BVH data
+                skeletonGroup.rotation.set(
+                    constrainedRotX,        // Constrained forward/back lean
+                    constrainedRotY,        // Constrained turning (no accumulation!)
+                    constrainedRotZ         // Constrained side lean
+                );
             }
             
             // Apply joint rotations using correct BVH joint order
@@ -911,12 +1185,19 @@
             
             bvhJointOrder.forEach(jointName => {
                 if (jointMeshes[jointName] && channelIndex + 2 < frameData.length) {
-                    const rotX = (frameData[channelIndex++] || 0) * Math.PI / 180;
-                    const rotY = (frameData[channelIndex++] || 0) * Math.PI / 180;
-                    const rotZ = (frameData[channelIndex++] || 0) * Math.PI / 180;
+                    const rotY = (frameData[channelIndex++] || 0) * Math.PI / 180; // Y first (BVH order)
+                    const rotX = (frameData[channelIndex++] || 0) * Math.PI / 180; // X second
+                    const rotZ = (frameData[channelIndex++] || 0) * Math.PI / 180; // Z third
                     
-                    // Apply rotation to individual joint (not the whole skeleton)
-                    jointMeshes[jointName].rotation.set(rotX, rotY, rotZ);
+                    // Set rotation order to match BVH specification (Y, X, Z)
+                    jointMeshes[jointName].rotation.order = 'YXZ';
+                    
+                    // Apply full rotations - let's see what the BVH actually wants
+                    jointMeshes[jointName].rotation.set(
+                        rotX,   // X: pitch (full value)
+                        rotY,   // Y: yaw (full value)
+                        rotZ    // Z: roll (full value)
+                    );
                 }
             });
         }
