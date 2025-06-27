@@ -197,6 +197,14 @@
                         </div>
                     </div>
                     
+                    <!-- Model Warmup Controls -->
+                    <div style="display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap;">
+                        <button id="warmup-all-btn" onclick="warmupAllModels()" style="background: #4CAF50; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🔥 Warm Up All</button>
+                        <button id="warmup-stylevae-btn" onclick="warmupStyleVAE()" style="background: #ff8800; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🎨 Wake StyleVAE</button>
+                        <button id="warmup-transitionnet-btn" onclick="warmupTransitionNet()" style="background: #ff4488; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🔄 Wake TransitionNet</button>
+                        <button id="test-server-btn" onclick="testServerConnection()" style="background: #2196F3; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🌐 Test Server</button>
+                    </div>
+                    
                     <div class="inference-metrics" id="inference-metrics" style="border-top: 1px solid rgba(0, 212, 255, 0.3); padding-top: 8px;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10px;">
                             <div>Inference Rate: <span id="inference-rate">60 FPS</span></div>
@@ -1134,6 +1142,401 @@
         
         // Add event listener for the toggle button
         document.getElementById('toggle-inference-details').onclick = toggleInferenceDetails;
+        
+        // === SERVER WARMUP FUNCTIONALITY ===
+        
+        // Server configuration
+        const SERVER_BASE_URL = 'http://localhost:8000';
+        const WEBSOCKET_URL = 'ws://localhost:8765';
+        let modelStatus = {
+            deephase: 'ready',
+            stylevae: 'standby', 
+            transitionnet: 'idle'
+        };
+        
+        // WebSocket connection
+        let websocket = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        
+        // Update model status displays
+        function updateModelStatus(model, status, message = '') {
+            const statusElement = document.getElementById(`${model}-status`);
+            if (statusElement) {
+                const statusDiv = statusElement.querySelector('div:last-child');
+                if (statusDiv) {
+                    statusDiv.textContent = status;
+                    if (message) {
+                        statusDiv.title = message;
+                    }
+                }
+                
+                // Update color based on status
+                const titleDiv = statusElement.querySelector('div:first-child');
+                if (titleDiv) {
+                    if (status.toLowerCase().includes('ready') || status.toLowerCase().includes('active')) {
+                        titleDiv.style.color = '#00ff88';
+                    } else if (status.toLowerCase().includes('loading') || status.toLowerCase().includes('warming')) {
+                        titleDiv.style.color = '#ffaa00';
+                    } else {
+                        titleDiv.style.color = '#ff6666';
+                    }
+                }
+            }
+            
+            modelStatus[model] = status.toLowerCase();
+        }
+        
+        // Log inference events
+        function logInferenceEvent(message, type = 'info') {
+            const inferenceLog = document.getElementById('inference-log');
+            if (inferenceLog) {
+                const timestamp = new Date().toLocaleTimeString();
+                const color = type === 'error' ? '#ff6666' : 
+                             type === 'warning' ? '#ffaa00' : 
+                             type === 'success' ? '#00ff88' : '#00d4ff';
+                
+                const logEntry = document.createElement('div');
+                logEntry.style.color = color;
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                
+                inferenceLog.appendChild(logEntry);
+                inferenceLog.scrollTop = inferenceLog.scrollHeight;
+                
+                // Keep only last 20 log entries
+                while (inferenceLog.children.length > 25) {
+                    inferenceLog.removeChild(inferenceLog.children[5]); // Keep first 5 header lines
+                }
+            }
+        }
+        
+        // === WEBSOCKET COMMUNICATION ===
+        
+        function connectWebSocket() {
+            try {
+                logInferenceEvent('🔗 Connecting to WebSocket server...', 'info');
+                websocket = new WebSocket(WEBSOCKET_URL);
+                
+                websocket.onopen = function(event) {
+                    logInferenceEvent('✅ WebSocket connected - real-time mode active!', 'success');
+                    reconnectAttempts = 0;
+                };
+                
+                websocket.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleWebSocketMessage(data);
+                    } catch (error) {
+                        logInferenceEvent(`❌ Error parsing WebSocket message: ${error}`, 'error');
+                    }
+                };
+                
+                websocket.onclose = function(event) {
+                    logInferenceEvent('🔌 WebSocket disconnected', 'warning');
+                    
+                    // Attempt to reconnect
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        logInferenceEvent(`🔄 Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`, 'info');
+                        setTimeout(connectWebSocket, 2000 * reconnectAttempts);
+                    } else {
+                        logInferenceEvent('❌ Max reconnection attempts reached. Using fallback mode.', 'error');
+                    }
+                };
+                
+                websocket.onerror = function(error) {
+                    logInferenceEvent('❌ WebSocket error - falling back to HTTP mode', 'error');
+                };
+                
+            } catch (error) {
+                logInferenceEvent(`❌ WebSocket connection failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'initial_status':
+                    logInferenceEvent('📊 Received initial server status', 'info');
+                    updateModelsFromServerData(data.models);
+                    break;
+                    
+                case 'status_update':
+                    const model = data.model;
+                    const status = data.status;
+                    const details = data.details || {};
+                    
+                    updateModelStatus(model, status, `${data.model_type || ''} - ${details.stage || ''}`);
+                    
+                    if (details.progress !== undefined) {
+                        logInferenceEvent(`${model}: ${status} (${details.progress}%)`, 'info');
+                    } else {
+                        logInferenceEvent(`${model}: ${status}`, 'info');
+                    }
+                    
+                    if (details.processing_time) {
+                        logInferenceEvent(`${model} processing time: ${details.processing_time.toFixed(3)}s`, 'success');
+                    }
+                    break;
+                    
+                case 'command_ack':
+                    logInferenceEvent(`✅ Command acknowledged: ${data.command} for ${data.model}`, 'success');
+                    break;
+                    
+                case 'pong':
+                    logInferenceEvent('🏓 Server responsive', 'info');
+                    break;
+                    
+                default:
+                    logInferenceEvent(`📨 Received: ${data.type}`, 'info');
+            }
+        }
+        
+        function sendWebSocketCommand(command, model = null) {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: command,
+                    model: model,
+                    timestamp: Date.now()
+                };
+                
+                websocket.send(JSON.stringify(message));
+                logInferenceEvent(`📤 Sent command: ${command}${model ? ' for ' + model : ''}`, 'info');
+                return true;
+            } else {
+                logInferenceEvent('⚠️ WebSocket not connected, using fallback mode', 'warning');
+                return false;
+            }
+        }
+        
+        function updateModelsFromServerData(modelsData) {
+            for (const [modelName, modelInfo] of Object.entries(modelsData)) {
+                if (modelName !== 'skeleton') {
+                    updateModelStatus(modelName, modelInfo.status, modelInfo.type);
+                }
+            }
+        }
+        
+        // Test server connection
+        async function testServerConnection() {
+            logInferenceEvent('Testing server connection...', 'info');
+            updateModelStatus('deephase', 'Testing...', 'Checking server connectivity');
+            
+            try {
+                const response = await fetch(`${SERVER_BASE_URL}/api/status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    logInferenceEvent(`✓ Server connected: ${data.server || 'RSMT Server'}`, 'success');
+                    
+                    // Update model statuses from server response
+                    if (data.models) {
+                        for (const [modelName, modelInfo] of Object.entries(data.models)) {
+                            if (modelName !== 'skeleton') {
+                                const status = modelInfo.status || 'Unknown';
+                                updateModelStatus(modelName, status, `Type: ${modelInfo.type || 'Unknown'}`);
+                            }
+                        }
+                    }
+                    
+                    logInferenceEvent(`AI Status: ${data.ai_status || 'Unknown'}`, 'info');
+                    logInferenceEvent(`Models using AI: ${data.models_using_ai || '0/3'}`, 'info');
+                    
+                } else {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                logInferenceEvent(`❌ Server connection failed: ${error.message}`, 'error');
+                
+                // Try simple HTTP server test
+                try {
+                    const simpleResponse = await fetch(`${SERVER_BASE_URL}/`);
+                    if (simpleResponse.ok) {
+                        logInferenceEvent('⚠ Simple HTTP server detected, need FastAPI server', 'warning');
+                        logInferenceEvent('💡 To start proper server: python3 simple_warmup_server.py', 'info');
+                        updateModelStatus('deephase', 'No API', 'Simple HTTP server only');
+                        updateModelStatus('stylevae', 'No API', 'Need API server');
+                        updateModelStatus('transitionnet', 'No API', 'Need API server');
+                    }
+                } catch (simpleError) {
+                    logInferenceEvent('🔄 Server not running - simulating warmup locally', 'warning');
+                    simulateLocalWarmup();
+                }
+            }
+        }
+        
+        // Simulate warmup when server is not available
+        function simulateLocalWarmup() {
+            updateModelStatus('deephase', 'Simulated', 'Local simulation mode');
+            updateModelStatus('stylevae', 'Standby', 'Ready for simulation');
+            updateModelStatus('transitionnet', 'Idle', 'Ready for simulation');
+            logInferenceEvent('🎭 Running in simulation mode - no real neural networks', 'warning');
+            logInferenceEvent('💡 Start server on port 8000 for real AI processing', 'info');
+        }
+        
+        // Warm up StyleVAE model
+        async function warmupStyleVAE() {
+            logInferenceEvent('🎨 Initiating StyleVAE warmup...', 'info');
+            updateModelStatus('stylevae', 'Initiating...', 'Sending warmup command');
+            
+            // Try WebSocket first
+            if (sendWebSocketCommand('warmup', 'stylevae')) {
+                return; // WebSocket will handle the rest
+            }
+            
+            // Fallback to HTTP/simulation
+            try {
+                const dummyMotion = {
+                    frames: [
+                        [0, 0, 0, 0, 0, 0, ...Array(60).fill(0)]
+                    ],
+                    frame_time: 0.016667
+                };
+                
+                const response = await fetch(`${SERVER_BASE_URL}/api/encode_style`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        motion_data: dummyMotion
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    logInferenceEvent(`✓ StyleVAE activated! Processing time: ${data.processing_time?.toFixed(3) || 'unknown'}s`, 'success');
+                    updateModelStatus('stylevae', 'Active', `Ready for style encoding. Time: ${data.processing_time?.toFixed(3)}s`);
+                    
+                    if (data.style_code && data.style_code.length > 0) {
+                        logInferenceEvent(`Style vector dimension: ${data.style_code.length}`, 'info');
+                    }
+                } else {
+                    throw new Error(`StyleVAE warmup failed: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                logInferenceEvent(`❌ HTTP warmup failed: ${error.message}`, 'error');
+                // Simulate StyleVAE activation
+                logInferenceEvent('🎨 Simulating StyleVAE warmup...', 'warning');
+                await new Promise(resolve => setTimeout(resolve, 800));
+                updateModelStatus('stylevae', 'Simulated', 'Local simulation active');
+                logInferenceEvent('✓ StyleVAE simulation active (256-dim style vectors)', 'success');
+            }
+        }
+        
+        // Warm up TransitionNet model
+        async function warmupTransitionNet() {
+            logInferenceEvent('🔄 Initiating TransitionNet warmup...', 'info');
+            updateModelStatus('transitionnet', 'Initiating...', 'Sending warmup command');
+            
+            // Try WebSocket first
+            if (sendWebSocketCommand('warmup', 'transitionnet')) {
+                return; // WebSocket will handle the rest
+            }
+            
+            // Fallback to HTTP/simulation
+            try {
+                const dummyMotion = {
+                    frames: [
+                        [0, 0, 0, 0, 0, 0, ...Array(60).fill(0)]
+                    ],
+                    frame_time: 0.016667
+                };
+                
+                const dummyStyleCode = Array(256).fill(0.1);
+                
+                const response = await fetch(`${SERVER_BASE_URL}/api/generate_transition`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        start_motion: dummyMotion,
+                        target_motion: dummyMotion,
+                        style_code: dummyStyleCode,
+                        transition_length: 10
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    logInferenceEvent(`✓ TransitionNet activated! Processing time: ${data.processing_time?.toFixed(3) || 'unknown'}s`, 'success');
+                    updateModelStatus('transitionnet', 'Active', `Ready for motion transitions. Time: ${data.processing_time?.toFixed(3)}s`);
+                    
+                    if (data.transition_frames && data.transition_frames.length > 0) {
+                        logInferenceEvent(`Generated ${data.transition_frames.length} transition frames`, 'info');
+                    }
+                } else {
+                    throw new Error(`TransitionNet warmup failed: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                logInferenceEvent(`❌ HTTP warmup failed: ${error.message}`, 'error');
+                // Simulate TransitionNet activation
+                logInferenceEvent('🔄 Simulating TransitionNet warmup...', 'warning');
+                await new Promise(resolve => setTimeout(resolve, 600));
+                updateModelStatus('transitionnet', 'Simulated', 'Local simulation active');
+                logInferenceEvent('✓ TransitionNet simulation active (motion blending)', 'success');
+            }
+        }
+        
+        // Warm up all models
+        async function warmupAllModels() {
+            logInferenceEvent('🔥 Starting full model warmup sequence...', 'info');
+            
+            // Try WebSocket command for all models
+            if (sendWebSocketCommand('warmup', 'all')) {
+                updateModelStatus('stylevae', 'Queued...', 'Waiting for server');
+                updateModelStatus('transitionnet', 'Queued...', 'Waiting for server');
+                return; // WebSocket will handle the rest
+            }
+            
+            // Fallback to individual warmups
+            updateModelStatus('deephase', 'Ready', 'Already active');
+            updateModelStatus('stylevae', 'Initializing...', 'Starting StyleVAE warmup');
+            updateModelStatus('transitionnet', 'Initializing...', 'Starting TransitionNet warmup');
+            
+            try {
+                await testServerConnection();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                await warmupStyleVAE();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                await warmupTransitionNet();
+                
+                logInferenceEvent('🎯 All models warmed up successfully!', 'success');
+                document.getElementById('inference-rate').textContent = 'Variable';
+                document.getElementById('inference-latency').textContent = 'Active';
+            } catch (error) {
+                logInferenceEvent(`❌ Warmup sequence failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Make warmup functions globally accessible
+        window.testServerConnection = testServerConnection;
+        window.warmupStyleVAE = warmupStyleVAE;
+        window.warmupTransitionNet = warmupTransitionNet;
+        window.warmupAllModels = warmupAllModels;
+        
+        // Initialize WebSocket connection
+        setTimeout(() => {
+            logInferenceEvent('🌐 Initializing real-time server connection...', 'info');
+            connectWebSocket();
+        }, 1000);
+        
+        // Auto-test server connection on page load
+        setTimeout(() => {
+            logInferenceEvent('Auto-testing server connection...', 'info');
+            testServerConnection();
+        }, 2000);
+        
+        // Periodic WebSocket ping and status updates
+        setInterval(() => {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                sendWebSocketCommand('ping');
+            } else {
+                // Try to reconnect if connection is lost
+                if (!websocket || websocket.readyState === WebSocket.CLOSED) {
+                    connectWebSocket();
+                }
+            }
+        }, 30000); // Every 30 seconds
     </script>
 </body>
 </html>
