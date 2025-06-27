@@ -587,14 +587,6 @@
             
             scene.add(skeletonGroup);
             
-            // DEBUG: Add a test cube to verify the scene is rendering
-            const testGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-            const testMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            const testCube = new THREE.Mesh(testGeometry, testMaterial);
-            testCube.position.set(2, 1, 0); // Position it away from skeleton
-            testCube.name = 'testCube';
-            scene.add(testCube);
-            
             // DEBUG: Add a larger test sphere at skeleton origin
             const originGeometry = new THREE.SphereGeometry(0.1, 12, 12);
             const originMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff });
@@ -806,13 +798,8 @@
                 
                 // Don't rotate the scene - let BVH data control all rotation
                 
-                // DEBUG: Rotate test objects to show animation is working
-                const testCube = scene.getObjectByName('testCube');
+                // DEBUG: Rotate test sphere to show animation is working
                 const originSphere = scene.getObjectByName('originSphere');
-                if (testCube) {
-                    testCube.rotation.x += 0.01;
-                    testCube.rotation.y += 0.01;
-                }
                 if (originSphere) {
                     originSphere.rotation.y += 0.02;
                 }
