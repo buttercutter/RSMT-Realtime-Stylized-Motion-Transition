@@ -2,16 +2,61 @@
 
 Welcome to the official repository for the paper "RSMT: Real-time Stylized Motion Transition for Characters". This repository's code framework is similar to the paper "Real-time Controllable Motion Transition for Characters," which is a state-of-the-art method in the field of real-time and offline transition motion generation. If you wish to reproduce the paper, you can start from this repository.
 
+## 🚀 Quick Start - Web Interface
+
+**NEW**: Experience RSMT through our interactive web interface!
+
+```bash
+# Start the neural network server
+cd /home/barberb/RSMT-Realtime-Stylized-Motion-Transition
+python output/web_viewer/rsmt_server_progressive.py
+
+# Open browser to http://localhost:8001
+```
+
+The web interface provides:
+- **Real-time motion transition generation**
+- **Neural network-powered inference**
+- **Interactive motion visualization**
+- **Complete API access**
+
 ## Documentation
 
 For detailed documentation, please refer to the [`docs/`](docs/) directory:
 
 - [Installation Guide](docs/installation.md): How to set up the RSMT environment
+- [**Web Interface Guide**](docs/web_interface_guide.md): **NEW** - Complete guide to the RSMT web interface
+- [**API Documentation**](docs/api_documentation.md): **NEW** - RESTful API reference for neural network server
+- [**Deployment Guide**](docs/deployment_guide.md): **NEW** - Production deployment instructions
 - [Dataset Preparation](docs/dataset_preparation.md): How to prepare the 100STYLE dataset for training
 - [Training Pipeline](docs/training_pipeline.md): Complete pipeline for training the RSMT model
 - [Inference Guide](docs/inference_guide.md): How to use the trained model for generating transitions
 - [Model Architecture](docs/model_architecture.md): Technical details of the RSMT model architecture
 - [Troubleshooting](docs/troubleshooting.md): Common issues and their solutions
+
+## 🆕 New Features
+
+### Web Interface & Neural Network Server
+- **Interactive Web Interface**: Browser-based motion transition visualization
+- **Progressive Loading**: Fast server startup with on-demand model loading
+- **Real PyTorch Inference**: Actual neural network models with trained weights
+- **RESTful API**: Complete API for motion processing and analysis
+- **Enhanced Algorithms**: Sophisticated fallback systems with advanced interpolation
+
+### Neural Network Models
+- **DeepPhase Model**: 132→256→128→32→2D architecture with checkpoint weights
+- **StyleVAE Model**: 256-dimensional style vector generation
+- **TransitionNet Model**: Neural network-based motion transition generation
+- **Quality Metrics**: Real-time motion quality analysis with FFT-based rhythm detection
+
+### API Endpoints
+- `/api/status` - Server and model status
+- `/api/encode_phase` - Phase coordinate encoding
+- `/api/encode_style` - Style vector extraction  
+- `/api/generate_transition` - Motion transition generation
+- `/api/analyze_motion` - Advanced motion analysis
+
+See the [Web Interface Guide](docs/web_interface_guide.md) for complete details.
 
 ## Overview
 

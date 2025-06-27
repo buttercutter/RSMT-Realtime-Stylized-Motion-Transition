@@ -1,8 +1,48 @@
 # Inference Guide
 
-This guide explains how to use the trained RSMT model to generate stylized motion transitions. After completing the training pipeline, you can use the model to create transitions between different motion styles.
+This guide explains how to use the trained RSMT model to generate stylized motion transitions. After completing the training pipeline, you can use the model through different interfaces.
 
-## Basic Inference
+## 🌐 Web Interface (Recommended)
+
+The easiest way to use RSMT is through the interactive web interface:
+
+### Quick Start
+```bash
+# Start the neural network server
+cd /home/barberb/RSMT-Realtime-Stylized-Motion-Transition
+python output/web_viewer/rsmt_server_progressive.py
+
+# Open browser to http://localhost:8001
+```
+
+### Features
+- **Real-time motion transition generation**
+- **Interactive visualization**
+- **Neural network-powered inference**
+- **Quality metrics and analysis**
+- **RESTful API access**
+
+See the [Web Interface Guide](web_interface_guide.md) for complete details.
+
+### API Usage
+```python
+import requests
+
+# Generate transition via API
+response = requests.post('http://localhost:8001/api/generate_transition', json={
+    "start_motion": {"frames": [[0,1,2,3,4,5]]},
+    "target_motion": {"frames": [[10,11,12,13,14,15]]}, 
+    "style_code": [0.1, 0.2, 0.3],
+    "transition_length": 30
+})
+
+transition = response.json()
+print("Generated", len(transition["transition_frames"]), "transition frames")
+```
+
+## 🖥️ Command Line Inference
+
+### Basic Inference
 
 To generate a basic motion transition using the trained model:
 
@@ -17,7 +57,7 @@ Replace the placeholders:
 
 This will generate a `test_net.bvh` file containing the transition animation, which can be viewed in any BVH viewer software.
 
-## Generating Longer Sequences between Multiple Key-frames
+### Generating Longer Sequences between Multiple Key-frames
 
 For more complex motion synthesis with multiple key-frames, use the `Running_LongSeq.py` script:
 
