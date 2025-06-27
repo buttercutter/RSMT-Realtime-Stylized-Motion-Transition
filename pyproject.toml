@@ -1,0 +1,379 @@
+# RSMT Pytest Configuration
+
+[tool.pytest.ini_options]
+# Test discovery
+testpaths = ["tests", "rsmt"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Add markers for test categorization
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests", 
+    "slow: Slow tests that take more than 30 seconds",
+    "gpu: Tests that require GPU",
+    "training: Tests that involve model training",
+    "dataset: Tests for dataset functionality",
+    "web: Tests for web interface",
+    "benchmark: Performance benchmark tests",
+    "smoke: Basic smoke tests for core functionality",
+]
+
+# Test execution options
+addopts = [
+    "--strict-markers",           # Fail on unknown markers
+    "--strict-config",           # Fail on unknown config options
+    "--verbose",                 # Verbose output
+    "--tb=short",               # Short traceback format
+    "--durations=10",           # Show 10 slowest tests
+    "--cov=rsmt",               # Coverage for rsmt package
+    "--cov-report=term-missing", # Show missing lines in coverage
+    "--cov-report=html:htmlcov", # HTML coverage report
+    "--cov-report=xml",         # XML coverage for CI
+    "--cov-fail-under=80",      # Fail if coverage below 80%
+    "--doctest-modules",        # Run doctests in modules
+    "--doctest-glob=*.md",      # Run doctests in markdown files
+]
+
+# Minimum version requirements
+minversion = "7.0"
+
+# Test timeout (in seconds)
+timeout = 300
+
+# Filter warnings
+filterwarnings = [
+    "error",                                    # Treat warnings as errors
+    "ignore::UserWarning",                      # Ignore user warnings
+    "ignore::DeprecationWarning",              # Ignore deprecation warnings
+    "ignore::PendingDeprecationWarning",       # Ignore pending deprecation
+    "ignore:.*torch.*:FutureWarning",         # Ignore PyTorch future warnings
+    "ignore:.*numpy.*:FutureWarning",         # Ignore NumPy future warnings
+]
+
+# Log configuration
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
+# Capture configuration  
+log_auto_indent = true
+log_file = "tests/pytest.log"
+log_file_level = "DEBUG"
+log_file_format = "%(asctime)s [%(levelname)8s] %(filename)s:%(lineno)d %(funcName)s(): %(message)s"
+log_file_date_format = "%Y-%m-%d %H:%M:%S"
+
+# xfail configuration
+xfail_strict = true
+
+# Test collection
+collect_ignore = [
+    "build",
+    "dist", 
+    ".eggs",
+    "*.egg-info",
+    ".tox",
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    "node_modules",
+]
+
+# Doctest options
+doctest_optionflags = [
+    "NORMALIZE_WHITESPACE",
+    "IGNORE_EXCEPTION_DETAIL", 
+    "ELLIPSIS",
+]
+
+# Asyncio configuration (if needed)
+asyncio_mode = "auto"
+
+# ========================================
+# Project Metadata
+# ========================================
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rsmt"
+version = "1.0.0"
+description = "Real-time Stylized Motion Transition - Deep learning framework for character animation"
+readme = "ReadMe.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "RSMT Development Team", email = "rsmt@example.com"},
+]
+maintainers = [
+    {name = "RSMT Development Team", email = "rsmt@example.com"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9", 
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = [
+    "machine-learning",
+    "deep-learning", 
+    "computer-graphics",
+    "animation",
+    "motion-synthesis",
+    "pytorch",
+    "neural-networks",
+    "character-animation",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "torch>=1.12.0",
+    "torchvision>=0.13.0",
+    "numpy>=1.21.0",
+    "scipy>=1.7.0",
+    "matplotlib>=3.5.0",
+    "pyyaml>=6.0",
+    "tqdm>=4.62.0",
+    "tensorboard>=2.8.0",
+    "lightning>=2.0.0",
+    "hydra-core>=1.3.0",
+    "omegaconf>=2.3.0",
+    "pillow>=8.3.0",
+    "opencv-python>=4.5.0",
+    "scikit-learn>=1.0.0",
+    "pandas>=1.3.0",
+    "h5py>=3.6.0",
+    "requests>=2.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "pytest-timeout>=2.1.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "bandit>=1.7.0",
+    "safety>=2.3.0",
+    "pre-commit>=3.0.0",
+]
+docs = [
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+    "sphinxcontrib-napoleon>=0.7",
+    "myst-parser>=0.18.0",
+    "sphinx-autodoc-typehints>=1.19.0",
+]
+web = [
+    "flask>=2.2.0",
+    "flask-cors>=4.0.0",
+    "gunicorn>=20.1.0",
+    "websockets>=10.4",
+]
+benchmark = [
+    "pytest-benchmark>=4.0.0",
+    "memory-profiler>=0.60.0",
+    "psutil>=5.9.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/rsmt-project/rsmt"
+Documentation = "https://rsmt.readthedocs.io"
+Repository = "https://github.com/rsmt-project/rsmt.git"
+"Bug Tracker" = "https://github.com/rsmt-project/rsmt/issues"
+Changelog = "https://github.com/rsmt-project/rsmt/blob/main/CHANGELOG.md"
+
+[project.scripts]
+rsmt = "rsmt.cli:main"
+rsmt-train = "scripts.train:main"
+rsmt-preprocess = "scripts.preprocess:main"
+rsmt-demo = "scripts.demo:main"
+
+# ========================================
+# Tool Configurations
+# ========================================
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["rsmt*", "scripts*"]
+exclude = ["tests*", "docs*", "tools*"]
+
+[tool.setuptools.package-data]
+rsmt = ["*.yaml", "*.json", "*.txt", "data/**/*"]
+
+# Black code formatting
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | MotionData
+  | output
+)/
+'''
+
+# isort import sorting
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip_glob = ["*/__pycache__/*", "*/build/*", "*/dist/*"]
+known_first_party = ["rsmt"]
+known_third_party = ["torch", "numpy", "matplotlib", "scipy", "sklearn", "PIL", "cv2"]
+
+# MyPy type checking
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "torch.*",
+    "torchvision.*", 
+    "matplotlib.*",
+    "scipy.*",
+    "sklearn.*",
+    "cv2.*",
+    "PIL.*",
+    "tqdm.*",
+    "tensorboard.*",
+    "lightning.*",
+    "hydra.*",
+    "omegaconf.*",
+]
+ignore_missing_imports = true
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["rsmt"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/build/*",
+    "*/dist/*",
+    "setup.py",
+]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\bProtocol\):",
+    "@(abc\.)?abstractmethod",
+]
+ignore_errors = true
+show_missing = true
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+# Bandit security checking
+[tool.bandit]
+exclude_dirs = ["tests", "docs", "build", "dist"]
+skips = ["B101", "B601"]  # Skip assert_used and shell injection (for subprocess usage)
+
+# commitizen configuration
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "1.0.0"
+tag_format = "v$version"
+version_files = [
+    "pyproject.toml:version",
+    "rsmt/__init__.py:__version__",
+]
+
+# Ruff linting (alternative to flake8)
+[tool.ruff]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+line-length = 88
+target-version = "py38"
+exclude = [
+    ".bzr",
+    ".direnv", 
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "MotionData",
+    "output",
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+"tests/*" = ["B011"]      # Allow assert False in tests

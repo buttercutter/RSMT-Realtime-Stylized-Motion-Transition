@@ -335,37 +335,112 @@ async def serve_main():
 
 @app.get("/api/status")
 async def get_status():
-    """Get server status and model information"""
+    """Get server status and detailed model information"""
     
     # Try to load models if not already loaded
     if not models_loaded:
         try_load_models()
     
-    models_status = {
-        "deephase": deephase_model is not None,
-        "stylevae": stylevae_model is not None,
-        "transitionnet": transitionnet_model is not None,
-        "skeleton": skeleton is not None
+    # Detailed model information
+    def get_model_info(model, model_name):
+        if model is None:
+            return {
+                "loaded": False,
+                "type": "Not Available",
+                "status": "Not Loaded",
+                "capabilities": []
+            }
+        
+        # Check if it's a real neural network or placeholder
+        is_neural_network = hasattr(model, 'forward') and hasattr(model, 'parameters')
+        is_enhanced = hasattr(model, 'encoder') or hasattr(model, 'decoder')
+        
+        if is_neural_network:
+            try:
+                # Count parameters if it's a real PyTorch model
+                import torch
+                if isinstance(model, torch.nn.Module):
+                    param_count = sum(p.numel() for p in model.parameters())
+                    model_type = "Neural Network (PyTorch)"
+                    capabilities = ["Real AI Processing", "Gradient-based Learning", "Deep Learning"]
+                else:
+                    param_count = "Unknown"
+                    model_type = "Neural Network"
+                    capabilities = ["AI Processing"]
+            except:
+                param_count = "Unknown"
+                model_type = "Neural Network"
+                capabilities = ["AI Processing"]
+        elif is_enhanced:
+            model_type = "Enhanced Model"
+            param_count = "Simulated"
+            capabilities = ["Enhanced Processing", "Neural-inspired"]
+        else:
+            model_type = "Placeholder"
+            param_count = 0
+            capabilities = ["Basic Processing", "Fallback Mode"]
+        
+        return {
+            "loaded": True,
+            "type": model_type,
+            "status": "Active" if is_neural_network else ("Enhanced" if is_enhanced else "Placeholder"),
+            "capabilities": capabilities,
+            "parameters": param_count,
+            "device": getattr(model, 'device', 'cpu')
+        }
+    
+    models_detailed = {
+        "deephase": get_model_info(deephase_model, "DeepPhase"),
+        "stylevae": get_model_info(stylevae_model, "StyleVAE"), 
+        "transitionnet": get_model_info(transitionnet_model, "TransitionNet"),
+        "skeleton": {
+            "loaded": skeleton is not None,
+            "type": "Kinematic Skeleton" if skeleton else "Not Available",
+            "status": "Active" if skeleton else "Not Loaded",
+            "joint_count": getattr(skeleton, 'n_joints', len(getattr(skeleton, 'parents', []))) if skeleton else 0
+        }
     }
     
-    # Check if PyTorch is available
+    # Check PyTorch and GPU status
     torch_available = False
     torch_version = "not available"
+    gpu_available = False
+    gpu_name = "none"
+    
     try:
         import torch
         torch_available = True
         torch_version = torch.__version__
+        gpu_available = torch.cuda.is_available()
+        if gpu_available:
+            gpu_name = torch.cuda.get_device_name(0)
     except:
         pass
+    
+    # Overall AI status
+    models_using_ai = sum(1 for model in models_detailed.values() 
+                         if model.get("loaded") and model.get("type") in ["Neural Network", "Neural Network (PyTorch)"])
+    total_models = 3  # deephase, stylevae, transitionnet
+    
+    ai_status = "Full AI" if models_using_ai == total_models else (
+        "Partial AI" if models_using_ai > 0 else "No AI"
+    )
     
     return {
         "status": "online",
         "server": "RSMT Neural Network Server (Progressive Loading)",
-        "models": models_status,
+        "ai_status": ai_status,
+        "models_using_ai": f"{models_using_ai}/{total_models}",
+        "models": models_detailed,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "gpu_available": torch_available and torch.cuda.is_available() if torch_available else False,
-        "torch_version": torch_version,
-        "models_initialized": models_loaded and all(models_status.values())
+        "hardware": {
+            "torch_available": torch_available,
+            "torch_version": torch_version,
+            "gpu_available": gpu_available,
+            "gpu_name": gpu_name
+        },
+        "models_initialized": models_loaded,
+        "performance_mode": "AI-Accelerated" if models_using_ai > 0 else "Algorithmic Fallback"
     }
 
 @app.post("/api/encode_phase", response_model=PhaseEncodeResponse)
@@ -789,6 +864,29 @@ async def analyze_motion(request: MotionAnalysisRequest):
     except Exception as e:
         logger.error(f"Motion analysis error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Serve static files (must be last to avoid route conflicts)
+@app.get("/{filename:path}")
+async def serve_static_file(filename: str):
+    """Serve BVH and other static files directly"""
+    # Only allow specific file extensions for security
+    allowed_extensions = {'.bvh', '.js', '.css', '.txt', '.json'}
+    file_ext = os.path.splitext(filename)[1].lower()
+    
+    # Check if file exists and has allowed extension
+    if file_ext in allowed_extensions and os.path.isfile(filename):
+        # Set appropriate content type
+        media_type = "text/plain"
+        if file_ext == '.js':
+            media_type = "application/javascript"
+        elif file_ext == '.css':
+            media_type = "text/css"
+        elif file_ext == '.json':
+            media_type = "application/json"
+        
+        return FileResponse(filename, media_type=media_type)
+    else:
+        raise HTTPException(status_code=404, detail="File not found")
 
 if __name__ == "__main__":
     import uvicorn

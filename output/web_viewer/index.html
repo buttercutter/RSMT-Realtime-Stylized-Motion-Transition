@@ -157,6 +157,11 @@
             <p>Web-based visualization tools for viewing BVH (Biovision Hierarchy) motion capture data from the RSMT system. 
             These viewers display authentic human motion from the 100STYLE dataset, showing natural walking patterns with 
             proper joint articulation and skeletal animation. Now featuring real-time style transitions between multiple animations!</p>
+            
+            <div style="background: #1a3a1a; padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50; margin-top: 15px;">
+                <strong style="color: #4caf50;">🆕 THREE.js r177!</strong> Modern ES modules versions with latest features and no deprecation warnings. 
+                <a href="THREE_JS_FIX_COMPLETE.md" style="color: #66ff66;">View technical details →</a>
+            </div>
         </div>
 
         <div class="setup-info">
@@ -172,10 +177,41 @@
         
         <div class="viewer-grid">
             <div class="viewer-card primary">
-                <div class="viewer-title">🎭 RSMT Showcase<span class="new-badge">NEW!</span></div>
+                <div class="viewer-title">🎭 RSMT Showcase (Modern)<span class="new-badge">UPDATED!</span></div>
                 <div class="viewer-description">
-                    Complete RSMT demonstration with real-time stylized motion transitions. Cycle between 
-                    10 different animations and watch smooth transitions between different motion styles.
+                    Modern ES modules version using THREE.js r177 with no deprecation warnings! Complete RSMT demonstration 
+                    with real-time stylized motion transitions and updated THREE.js integration.
+                </div>
+                <ul class="viewer-features">
+                    <li>✅ THREE.js r177 ES modules</li>
+                    <li>✅ No deprecation warnings</li>
+                    <li>🎭 Interactive 3D skeleton demo</li>
+                    <li>🔄 Animation cycling and transitions</li>
+                    <li>📊 Real-time performance metrics</li>
+                </ul>
+                <a href="rsmt_showcase_modern.html" class="launch-btn">Launch Modern Showcase</a>
+            </div>
+
+            <div class="viewer-card">
+                <div class="viewer-title">🔧 THREE.js Test</div>
+                <div class="viewer-description">
+                    Simple test to verify THREE.js r177 ES modules are working correctly. 
+                    Shows a spinning cube with clean error handling.
+                </div>
+                <ul class="viewer-features">
+                    <li>ES modules import test</li>
+                    <li>Basic 3D scene validation</li>
+                    <li>Error reporting and diagnostics</li>
+                    <li>Performance monitoring</li>
+                </ul>
+                <a href="modern_three_test.html" class="launch-btn">Test THREE.js</a>
+            </div>
+
+            <div class="viewer-card">
+                <div class="viewer-title">🎭 RSMT Showcase (Legacy)</div>
+                <div class="viewer-description">
+                    Original RSMT demonstration. May show deprecation warnings in console 
+                    until three.min.js file is updated.
                 </div>
                 <ul class="viewer-features">
                     <li>10 different BVH animations</li>
@@ -184,7 +220,7 @@
                     <li>Interactive transition controls</li>
                     <li>Full 3D visualization with effects</li>
                 </ul>
-                <a href="rsmt_showcase.html" class="launch-btn">Launch Showcase</a>
+                <a href="rsmt_showcase.html" class="launch-btn">Launch Legacy Showcase</a>
             </div>
 
             <div class="viewer-card">

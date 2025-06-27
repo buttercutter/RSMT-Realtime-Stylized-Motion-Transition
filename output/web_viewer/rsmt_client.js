@@ -55,7 +55,7 @@ class RSMTClient {
      */
     async updateModelStatus() {
         try {
-            const response = await fetch(`${this.serverUrl}/status`);
+            const response = await fetch(`${this.serverUrl}/api/status`);
             if (response.ok) {
                 this.modelStatus = await response.json();
                 return this.modelStatus;
@@ -319,39 +319,72 @@ class RSMTStatusIndicator {
         style.textContent = `
             .rsmt-status-indicator {
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 gap: 8px;
-                padding: 8px 12px;
-                background: rgba(0, 0, 0, 0.7);
-                border-radius: 6px;
+                padding: 12px 16px;
+                background: rgba(0, 0, 0, 0.85);
+                border-radius: 8px;
                 font-size: 12px;
                 color: white;
                 border: 1px solid rgba(255, 255, 255, 0.2);
+                backdrop-filter: blur(10px);
+                min-width: 250px;
+                max-width: 400px;
             }
             
             .status-light {
-                width: 8px;
-                height: 8px;
+                width: 10px;
+                height: 10px;
                 border-radius: 50%;
                 background: #666;
-                transition: background-color 0.3s ease;
+                transition: all 0.3s ease;
+                margin-top: 2px;
+                flex-shrink: 0;
+                box-shadow: 0 0 10px rgba(255,255,255,0.3);
             }
             
-            .status-light.connected { background: #4CAF50; }
-            .status-light.neural { background: #2196F3; }
-            .status-light.disconnected { background: #f44336; }
+            .status-light.connected { 
+                background: #4CAF50; 
+                box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+            }
+            .status-light.neural { 
+                background: #2196F3; 
+                box-shadow: 0 0 15px rgba(33, 150, 243, 0.8);
+                animation: pulse-neural 2s infinite;
+            }
+            .status-light.disconnected { 
+                background: #f44336; 
+                box-shadow: 0 0 10px rgba(244, 67, 54, 0.4);
+            }
+            
+            @keyframes pulse-neural {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.6; }
+            }
             
             .status-text {
-                line-height: 1.3;
+                line-height: 1.4;
+                flex: 1;
             }
             
             .connection-status {
                 font-weight: bold;
+                margin-bottom: 4px;
+                color: #00d4ff;
             }
             
             .model-info {
-                opacity: 0.8;
+                opacity: 0.9;
                 font-size: 11px;
+                line-height: 1.3;
+                color: #ccc;
+            }
+            
+            .model-info small {
+                display: block;
+                margin-top: 4px;
+                font-size: 10px;
+                color: #999;
             }
         `;
         document.head.appendChild(style);
@@ -360,37 +393,94 @@ class RSMTStatusIndicator {
     async updateStatus() {
         if (!this.container) return;
         
-        const info = this.client.getConnectionInfo();
         const light = this.container.querySelector('.status-light');
         const connectionStatus = this.container.querySelector('.connection-status');
         const modelInfo = this.container.querySelector('.model-info');
         
-        if (info.connected) {
-            await this.client.updateModelStatus();
-            const updatedInfo = this.client.getConnectionInfo();
-            
-            if (updatedInfo.capabilities && 
-                (updatedInfo.capabilities.phaseEncoding || 
-                 updatedInfo.capabilities.styleEncoding || 
-                 updatedInfo.capabilities.transitionGeneration)) {
-                light.className = 'status-light neural';
-                connectionStatus.textContent = 'Neural Networks Active';
+        if (!light || !connectionStatus || !modelInfo) return;
+        
+        if (this.client.isConnected) {
+            try {
+                // Get detailed status from server
+                const response = await fetch(`${this.client.serverUrl}/api/status`);
+                if (response.ok) {
+                    const status = await response.json();
+                    
+                    // Determine AI status based on models
+                    const aiModels = [];
+                    const enhancedModels = [];
+                    const placeholderModels = [];
+                    
+                    Object.entries(status.models).forEach(([name, info]) => {
+                        if (name === 'skeleton') return; // Skip skeleton info
+                        
+                        if (info.type === 'Neural Network (PyTorch)' || info.type === 'Neural Network') {
+                            aiModels.push(name);
+                        } else if (info.type === 'Enhanced Model') {
+                            enhancedModels.push(name);
+                        } else if (info.type === 'Placeholder') {
+                            placeholderModels.push(name);
+                        }
+                    });
+                    
+                    // Set status based on AI model availability
+                    if (aiModels.length > 0) {
+                        light.className = 'status-light neural';
+                        connectionStatus.textContent = `✨ AI Models Active (${status.ai_status})`;
+                        
+                        const modelDetails = [];
+                        if (aiModels.length > 0) {
+                            modelDetails.push(`🧠 AI: ${aiModels.join(', ')}`);
+                        }
+                        if (enhancedModels.length > 0) {
+                            modelDetails.push(`⚡ Enhanced: ${enhancedModels.join(', ')}`);
+                        }
+                        if (placeholderModels.length > 0) {
+                            modelDetails.push(`📦 Fallback: ${placeholderModels.join(', ')}`);
+                        }
+                        
+                        modelInfo.innerHTML = modelDetails.join('<br>');
+                        
+                    } else if (enhancedModels.length > 0) {
+                        light.className = 'status-light connected';
+                        connectionStatus.textContent = '⚡ Enhanced Processing Active';
+                        modelInfo.textContent = `Enhanced: ${enhancedModels.join(', ')}, Fallback: ${placeholderModels.join(', ')}`;
+                        
+                    } else {
+                        light.className = 'status-light connected';
+                        connectionStatus.textContent = '📦 Server Connected (Placeholder Mode)';
+                        modelInfo.textContent = `Using fallback processing for ${placeholderModels.join(', ')}`;
+                    }
+                    
+                    // Add hardware info if available
+                    if (status.hardware) {
+                        const hardwareInfo = [];
+                        if (status.hardware.gpu_available) {
+                            hardwareInfo.push(`🚀 GPU: ${status.hardware.gpu_name}`);
+                        }
+                        if (status.hardware.torch_available) {
+                            hardwareInfo.push(`🔥 PyTorch: ${status.hardware.torch_version}`);
+                        }
+                        
+                        if (hardwareInfo.length > 0) {
+                            modelInfo.innerHTML += `<br><small style="opacity:0.7">${hardwareInfo.join(' | ')}</small>`;
+                        }
+                    }
+                    
+                } else {
+                    throw new Error('Status request failed');
+                }
                 
-                const capabilities = [];
-                if (updatedInfo.capabilities.phaseEncoding) capabilities.push('DeepPhase');
-                if (updatedInfo.capabilities.styleEncoding) capabilities.push('StyleVAE');
-                if (updatedInfo.capabilities.transitionGeneration) capabilities.push('TransitionNet');
-                
-                modelInfo.textContent = `Models: ${capabilities.join(', ')}`;
-            } else {
+            } catch (error) {
+                console.warn('Failed to get detailed status:', error);
                 light.className = 'status-light connected';
-                connectionStatus.textContent = 'Server Connected (Mock Mode)';
-                modelInfo.textContent = 'Neural models not loaded - using enhanced interpolation';
+                connectionStatus.textContent = 'Server Connected (Basic)';
+                modelInfo.textContent = 'Status details unavailable';
             }
         } else {
             light.className = 'status-light disconnected';
-            connectionStatus.textContent = 'Basic Interpolation';
-            modelInfo.textContent = 'Server offline - using fallback implementation';
+            connectionStatus.textContent = '🔧 Offline Mode';
+            modelInfo.textContent = 'Using local interpolation algorithms';
         }
     }
 }
