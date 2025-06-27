@@ -464,3 +464,105 @@ nohup: ignoring input
 127.0.0.1 - - [27/Jun/2025 14:58:42] "GET /api/status HTTP/1.1" 404 -
 127.0.0.1 - - [27/Jun/2025 14:58:42] code 404, message File not found
 127.0.0.1 - - [27/Jun/2025 14:58:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 14:59:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 14:59:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 14:59:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 14:59:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:00:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:00:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:00:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:00:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:01:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:01:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:01:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:01:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:02:18] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:02:18] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:02:18] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:02:19] "GET /neutral_reference.bvh HTTP/1.1" 304 -
+127.0.0.1 - - [27/Jun/2025 15:02:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:02:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:02:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:02:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:03:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:03:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:03:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:03:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:03:49] "GET /rsmt_showcase_modern.html HTTP/1.1" 304 -
+127.0.0.1 - - [27/Jun/2025 15:03:50] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:03:50] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:03:57] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:03:57] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:03:57] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:04:32] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:04:32] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:04:32] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:04:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:04:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:04:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:04:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:04:59] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:04:59] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:04:59] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:05:19] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:05:19] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:05:19] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:05:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:05:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:05:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:05:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:05:48] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:05:48] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:05:48] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:06:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:06:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:06:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:06:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:06:55] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:06:55] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:06:55] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:07:23] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:07:24] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:07:24] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:07:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:07:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:07:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:07:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:08:33] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:08:33] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:08:33] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:08:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:08:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:08:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:08:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:09:05] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:09:05] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:09:05] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:09:34] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:09:34] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:09:34] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:09:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:09:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:09:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:09:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:10:39] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:10:39] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:10:39] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:10:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:10:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:10:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:10:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:10:54] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:10:54] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:10:54] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:11:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:11:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:11:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:11:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:12:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:12:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:12:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:12:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:12:59] "GET /rsmt_showcase_modern.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jun/2025 15:12:59] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:12:59] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
