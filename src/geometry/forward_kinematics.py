@@ -1,7 +1,14 @@
 from typing import List
 
 import torch
-from pytorch3d.transforms import quaternion_multiply, quaternion_apply
+try:
+    # Try to import from PyTorch3D if available
+    from pytorch3d.transforms import quaternion_multiply, quaternion_apply
+    print("Using PyTorch3D transforms")
+except ImportError:
+    # Fall back to our compatibility layer
+    from src.geometry.pytorch3d_transforms import quaternion_multiply, quaternion_apply
+    print("Using compatibility transforms layer")
 
 def forward_transform_hierarchy(local_transforms: torch.Tensor, level_transforms: List[List[int]],
                                 level_transform_parents: List[List[int]]):

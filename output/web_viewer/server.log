@@ -1,0 +1,33 @@
+nohup: ignoring input
+127.0.0.1 - - [27/Jun/2025 15:57:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:57:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:57:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:57:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:58:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:58:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:58:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:58:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:59:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:59:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 15:59:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 15:59:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 16:00:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 16:00:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 16:00:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 16:00:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 16:01:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 16:01:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 16:01:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 16:01:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 16:02:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 16:02:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 16:02:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 16:02:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 16:03:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 16:03:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 16:03:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 16:03:42] "GET /status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 16:04:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 16:04:42] "GET /api/status HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jun/2025 16:04:42] code 404, message File not found
+127.0.0.1 - - [27/Jun/2025 16:04:42] "GET /status HTTP/1.1" 404 -

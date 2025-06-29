@@ -21,9 +21,48 @@ class DeepPhaseProcessor(BasedDataProcessor):
         quat = torch.from_numpy(local_quat).float().cuda()
         offsets = torch.from_numpy(offsets).float().cuda()
         hip_pos = torch.from_numpy(hip_pos).float().cuda()
-        gp,gq = skeleton.forward_kinematics(quat,offsets,hip_pos)
-
-        return gp,gq[...,0:1,:]
+        
+        # Import our fixed kinematics functions
+        try:
+            # First try to import the fixed kinematics
+            from src.geometry.fixed_kinematics import fixed_forward_kinematics
+            
+            # Get the parent structure
+            if isinstance(skeleton, dict):
+                parents = skeleton["parents"]
+            else:
+                parents = skeleton.parents if hasattr(skeleton, "parents") else [-1, 0, 1, 2, 3, 0, 5, 6, 7, 0, 9, 10, 11, 12, 13, 12, 15, 16, 17, 12, 19, 20, 21]
+            
+            # Use our fixed version that handles dimension issues
+            gp, gq = fixed_forward_kinematics(quat, offsets, hip_pos, parents)
+            
+        except Exception as e:
+            print(f"Error in fixed forward kinematics: {e}")
+            print("Attempting fallback methods...")
+            
+            # Try the original method
+            try:
+                if hasattr(skeleton, "forward_kinematics"):
+                    gp, gq = skeleton.forward_kinematics(quat, offsets, hip_pos)
+                else:
+                    # Fall back to direct function call
+                    from src.geometry import forward_kinematics as fk
+                    parents = skeleton["parents"] if isinstance(skeleton, dict) else skeleton.parents
+                    gp, gq = fk.forward_kinematics_quats(quat, offsets, hip_pos, parents)
+            except Exception as e:
+                print(f"Error in forward kinematics fallbacks: {e}")
+                # Last resort fallback - hard-coded parents
+                from src.geometry import forward_kinematics as fk
+                if isinstance(skeleton, dict):
+                    parents = skeleton["parents"]
+                else:
+                    parents = skeleton.parents if hasattr(skeleton, "parents") else [-1, 0, 1, 2, 3, 0, 5, 6, 7, 0, 9, 10, 11, 12, 13, 12, 15, 16, 17, 12, 19, 20, 21]
+                
+                # Try with manually fixing dimensions
+                hip_pos_reshaped = hip_pos.unsqueeze(0).unsqueeze(0) if len(hip_pos.shape) < 3 else hip_pos
+                gp, gq = fk.forward_kinematics_quats(quat, offsets, hip_pos_reshaped, parents)
+            
+        return gp, gq[...,0:1,:]
     def transform_single(self,offsets,hip_pos,local_quat,skeleton):
         gp,gq = self.gpu_fk(offsets,hip_pos,local_quat,skeleton)
         dict = self.process(gq.unsqueeze(0),gp.unsqueeze(0))
@@ -62,7 +101,15 @@ class DeepPhaseProcessorv2(BasedDataProcessor):
         quat = torch.from_numpy(local_quat).float().cuda()
         offsets = torch.from_numpy(offsets).float().cuda()
         hip_pos = torch.from_numpy(hip_pos).float().cuda()
-        gp,gq = skeleton.forward_kinematics(quat,offsets,hip_pos)
+        
+        # Handle different skeleton types
+        if hasattr(skeleton, "forward_kinematics"):
+            gp,gq = skeleton.forward_kinematics(quat,offsets,hip_pos)
+        else:
+            # Fall back to direct function call
+            from src.geometry import forward_kinematics as fk
+            parents = skeleton["parents"] if isinstance(skeleton, dict) else skeleton.parents
+            gp,gq = fk.forward_kinematics_quats(quat,offsets,hip_pos,parents)
 
         return gp,gq[...,0:1,:]
     def transform_single(self,offsets,hip_pos,local_quat,skeleton):

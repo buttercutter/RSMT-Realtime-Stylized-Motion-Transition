@@ -1,0 +1,75 @@
+Binary Data Inspection Log
+=======================
+
+File exists: ./MotionData/100STYLE/train_binary.dat
+File size: 3457423 bytes
+
+==================================================
+Inspecting ./MotionData/100STYLE/train_binary.dat
+==================================================
+
+Data is a dictionary with 90 keys
+
+--- Sample for style: Aeroplane ---
+Style data is a dictionary with keys: ['BR']
+
+  Motion type: BR
+  Motion data is a dictionary with keys: ['quats', 'offsets', 'hips']
+  - quats: type=<class 'numpy.ndarray'>, shape=(100, 23, 4)
+    Sample data: [-0.03136048 -0.03403869  0.09064866 -0.0669868 ]
+  - offsets: type=<class 'numpy.ndarray'>, shape=(23, 3)
+    Sample data: [-0.07217437 -0.06883232 -0.0570758 ]
+  - hips: type=<class 'numpy.ndarray'>, shape=(100, 3)
+    Sample data: [ 0.03459042 -0.09620588  0.08772961]
+
+--- Sample for style: Akimbo ---
+Style data is a dictionary with keys: ['BR']
+
+  Motion type: BR
+  Motion data is a dictionary with keys: ['quats', 'offsets', 'hips']
+  - quats: type=<class 'numpy.ndarray'>, shape=(100, 23, 4)
+    Sample data: [-0.05953073 -0.05957887 -0.04682917  0.09995087]
+  - offsets: type=<class 'numpy.ndarray'>, shape=(23, 3)
+    Sample data: [ 0.02365509 -0.01010481  0.05894068]
+  - hips: type=<class 'numpy.ndarray'>, shape=(100, 3)
+    Sample data: [-0.09701711 -0.08036302 -0.04403366]
+
+==================================================
+Inspection complete
+==================================================
+File exists: ./MotionData/100STYLE/test_binary.dat
+File size: 384298 bytes
+
+==================================================
+Inspecting ./MotionData/100STYLE/test_binary.dat
+==================================================
+
+Data is a dictionary with 10 keys
+
+--- Sample for style: TwoFootJump ---
+Style data is a dictionary with keys: ['BR']
+
+  Motion type: BR
+  Motion data is a dictionary with keys: ['quats', 'offsets', 'hips']
+  - quats: type=<class 'numpy.ndarray'>, shape=(100, 23, 4)
+    Sample data: [ 0.09521635 -0.05145071  0.00641932 -0.00992551]
+  - offsets: type=<class 'numpy.ndarray'>, shape=(23, 3)
+    Sample data: [-0.04598016  0.0105268   0.00264118]
+  - hips: type=<class 'numpy.ndarray'>, shape=(100, 3)
+    Sample data: [0.04422148 0.0760038  0.09345557]
+
+--- Sample for style: WalkingStickLeft ---
+Style data is a dictionary with keys: ['BR']
+
+  Motion type: BR
+  Motion data is a dictionary with keys: ['quats', 'offsets', 'hips']
+  - quats: type=<class 'numpy.ndarray'>, shape=(100, 23, 4)
+    Sample data: [ 0.08218622 -0.03017291  0.02546192 -0.07353386]
+  - offsets: type=<class 'numpy.ndarray'>, shape=(23, 3)
+    Sample data: [-0.05846025  0.07268787  0.05468576]
+  - hips: type=<class 'numpy.ndarray'>, shape=(100, 3)
+    Sample data: [ 0.01320464 -0.00766608  0.06676757]
+
+==================================================
+Inspection complete
+==================================================

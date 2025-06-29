@@ -5,7 +5,16 @@ import src.geometry.inverse_kinematics as ik
 import torch
 from src.geometry.vector import find_secondary_axis
 from np_vector import euler_to_quat,remove_quat_discontinuities,quat_to_euler
-import pytorch3d.transforms as trans
+
+# Use our custom compatibility layer for pytorch3d transforms
+try:
+    # First try to import from pytorch3d if available
+    import pytorch3d.transforms as trans
+    print("Using installed PyTorch3D library")
+except ImportError:
+    # Fall back to our compatibility layer
+    import src.geometry.pytorch3d_transforms as trans
+    print("Using PyTorch3D compatibility layer")
 
 
 channelmap = {
@@ -490,11 +499,11 @@ def save_bvh(filename, anim, names=None, frametime=1.0 / 30.0, order='xyz', posi
         f.write("%sOFFSET %f %f %f\n" % (t, anim.offsets[0, 0], anim.offsets[0, 1], anim.offsets[0, 2]))
         f.write("%sCHANNELS 6 Xposition Yposition Zposition %s %s %s \n" %
                 (t, channelmap_inv[order[0]], channelmap_inv[order[1]], channelmap_inv[order[2]]))
-        num_joints=anim.parents.shape[0]
+        num_joints=len(anim.parents)
         assert num_joints==anim.offsets.shape[0]
         seq_length=anim.quats.shape[0]
         assert seq_length==anim.hip_pos.shape[0]
-        for i in range(anim.parents.shape[0]):#iterate joints
+        for i in range(len(anim.parents)):#iterate joints
             if anim.parents[i] == 0:
                 t = save_joint(f, anim, names, t, i, order=order, positions=positions)
 
@@ -515,7 +524,7 @@ def save_bvh(filename, anim, names=None, frametime=1.0 / 30.0, order='xyz', posi
         if len(poss.shape)==2:
             poss=poss[:,np.newaxis,:]
         for i in range(poss.shape[0]):#frame
-            for j in range(anim.parents.shape[0]):#joints
+            for j in range(len(anim.parents)):#joints
 
                 if positions or j == 0:
 
@@ -550,7 +559,7 @@ def save_joint(f, anim, names, t, i, order='zyx', positions=False):
 
     end_site = True
 
-    for j in range(anim.parents.shape[0]):
+    for j in range(len(anim.parents)):
         if anim.parents[j] == i:
             t = save_joint(f, anim, names, t, j, order=order, positions=positions)
             end_site = False
