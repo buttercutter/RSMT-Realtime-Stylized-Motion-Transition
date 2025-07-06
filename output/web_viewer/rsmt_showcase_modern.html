@@ -300,6 +300,10 @@
                     <button onclick="toggleFacialExpressions()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">😊 Toggle Expressions</button>
                     <button onclick="fixVRMShaders()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 Fix VRM Shaders</button>
                     <button onclick="testLighting()" style="padding: 8px 16px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;">💡 Test Lighting</button>
+                    <button onclick="improvedLighting()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">✨ Enhance Lighting</button>
+                    <button onclick="focusOnFace()" style="padding: 8px 16px; background: #8b5cf6; color: white; border: none; border-radius: 4px; cursor: pointer;">👁️ Focus Face</button>
+                    <button onclick="fullBodyView()" style="padding: 8px 16px; background: #06b6d4; color: white; border: none; border-radius: 4px; cursor: pointer;">👤 Full Body</button>
+                    <button onclick="animateIchika()" style="padding: 8px 16px; background: #ec4899; color: white; border: none; border-radius: 4px; cursor: pointer;">😊 Animate Ichika</button>
                     <button onclick="fixSceneMaterials()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 Fix Materials</button>
                     <button onclick="compileAllMaterials()" style="padding: 8px 16px; background: #7c3aed; color: white; border: none; border-radius: 4px; cursor: pointer;">⚙️ Compile Materials</button>
                     <button onclick="diagnoseMaterials()" style="padding: 8px 16px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer;">🔍 Diagnose Materials</button>
@@ -1091,11 +1095,34 @@
             
             const renderer = new THREE.WebGLRenderer({ 
                 antialias: true,
-                alpha: true 
+                alpha: true,
+                preserveDrawingBuffer: true,
+                powerPreference: "high-performance"
             });
+            
+            // Enhanced renderer configuration for VRM compatibility
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.enabled = false; // Disabled for VRM compatibility
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            
+            // Add comprehensive error handling
+            
+            // Handle WebGL context loss
+            renderer.domElement.addEventListener('webglcontextlost', function(event) {
+                event.preventDefault();
+                console.warn('⚠️ WebGL context lost');
+                updateLoadingStatus('WebGL context lost - attempting recovery...');
+            });
+            
+            renderer.domElement.addEventListener('webglcontextrestored', function() {
+                console.log('✅ WebGL context restored');
+                updateLoadingStatus('WebGL context restored');
+                // Recompile materials
+                compileAllMaterials();
+            });
             
             // Add renderer to container (below UI)
             container.appendChild(renderer.domElement);
@@ -1106,64 +1133,83 @@
             
             updateLoadingStatus('Setting up professional lighting and environment...');
             
-            // Professional lighting setup for anime character rendering
-            scene.background = new THREE.Color(0x87CEEB); // Sky blue background
+            // Professional anime character lighting setup (improved)
             
-            // High-intensity ambient light for anime-style illumination  
-            const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+            // Beautiful gradient background for anime characters
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB'); // Sky blue
+            gradient.addColorStop(0.5, '#98D8E8'); // Light blue
+            gradient.addColorStop(1, '#F0F8FF'); // Alice blue
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const bgTexture = new THREE.CanvasTexture(canvas);
+            scene.background = bgTexture;
+            
+            // Professional anime character lighting setup
+            
+            // High-intensity ambient light for soft overall illumination
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
             
             // Main key light (strong directional light from front-top)
-            const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
-            keyLight.position.set(2, 4, 3);
-            keyLight.castShadow = false; // Disabled for VRM compatibility
-            scene.add(keyLight);
+            window.keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            window.keyLight.position.set(2, 3, 2);
+            window.keyLight.castShadow = false; // Avoid VRM shader conflicts
+            scene.add(window.keyLight);
             
             // Fill light from left (softer, warmer)
-            const fillLight = new THREE.DirectionalLight(0xffddaa, 1.5);
-            fillLight.position.set(-3, 3, 2);
-            scene.add(fillLight);
+            window.fillLight = new THREE.DirectionalLight(0xffeeaa, 1.0);
+            window.fillLight.position.set(-2, 2, 1);
+            scene.add(window.fillLight);
             
-            // Back/rim light for character outline
-            const rimLight = new THREE.DirectionalLight(0xaaccff, 1.0);
-            rimLight.position.set(0, 3, -4);
-            scene.add(rimLight);
+            // Rim light for character outline
+            window.rimLight = new THREE.DirectionalLight(0xaaccff, 0.8);
+            window.rimLight.position.set(0, 2, -3);
+            scene.add(window.rimLight);
             
-            // Additional character illumination
-            const characterLight1 = new THREE.PointLight(0xffffff, 1.5, 10);
-            characterLight1.position.set(1, 2, 2);
-            scene.add(characterLight1);
+            // Character face lighting (important for anime style)
+            window.faceLight = new THREE.SpotLight(0xffffff, 1.2);
+            window.faceLight.position.set(0, 2, 1.5);
+            window.faceLight.angle = Math.PI / 6;
+            window.faceLight.penumbra = 0.2;
+            window.faceLight.decay = 2;
+            window.faceLight.distance = 5;
+            scene.add(window.faceLight);
             
-            const characterLight2 = new THREE.PointLight(0xffaaaa, 1.0, 8);
-            characterLight2.position.set(-1, 1.5, 1);
-            scene.add(characterLight2);
-            
-            // Soft environmental lighting
-            const envLight1 = new THREE.PointLight(0xaaffff, 0.8, 15);
-            envLight1.position.set(3, 4, -2);
+            // Soft environmental lights
+            const envLight1 = new THREE.PointLight(0xffffff, 0.6, 8);
+            envLight1.position.set(2, 2, -1);
             scene.add(envLight1);
             
-            const envLight2 = new THREE.PointLight(0xffffaa, 0.8, 15);
-            envLight2.position.set(-3, 4, -2);
+            const envLight2 = new THREE.PointLight(0xffffcc, 0.6, 8);
+            envLight2.position.set(-2, 2, -1);
             scene.add(envLight2);
+            
             
             // Configure renderer for VRM compatibility (disable shadows to prevent shader errors)
             renderer.shadowMap.enabled = false; // Disabled for VRM compatibility 
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.2;
+            renderer.toneMappingExposure = 1.0; // Reduced for better anime lighting
             renderer.outputColorSpace = THREE.SRGBColorSpace;
             
             // Configure for VRM compatibility
             renderer.outputEncoding = THREE.sRGBEncoding;
             renderer.gammaFactor = 2.2;
             
-            // Ground plane with better material
-            const groundGeometry = new THREE.PlaneGeometry(30, 30);
+            // Ground plane with better material (circular for anime aesthetic)
+            const groundGeometry = new THREE.CircleGeometry(5, 32);
             const groundMaterial = new THREE.MeshLambertMaterial({ 
                 color: 0xffffff,
-                transparent: false,
-                opacity: 1.0
+                transparent: true,
+                opacity: 0.8
             });
             const groundPlane = new THREE.Mesh(groundGeometry, groundMaterial);
             groundPlane.rotation.x = -Math.PI / 2;
@@ -1171,10 +1217,10 @@
             groundPlane.receiveShadow = false; // Disabled for VRM compatibility
             scene.add(groundPlane);
             
-            // Subtle grid (less prominent)
-            const gridHelper = new THREE.GridHelper(20, 40, 0x888888, 0x444444);
+            // Subtle circular grid around character (better for anime aesthetic)
+            const gridHelper = new THREE.PolarGridHelper(3, 8, 8, 64, 0x888888, 0x444444);
             gridHelper.position.y = 0.01;
-            gridHelper.material.opacity = 0.3;
+            gridHelper.material.opacity = 0.2;
             gridHelper.material.transparent = true;
             scene.add(gridHelper);
             
@@ -1393,6 +1439,12 @@
                     // Store VRM character reference in character system
                     characterSystem.vrmCharacter = vrmCharacter;
                     
+                    // Store VRM character reference globally for functions
+                    window.vrmCharacter = vrmCharacter;
+                    
+                    // Also store globally for debugging and lighting tests
+                    window.vrmCharacter = vrmCharacter;
+                    
                     // Fix VRM shader compatibility issues after loading
                     if (vrmCharacter.vrm && vrmCharacter.vrm.scene) {
                         console.log('🔧 Applying VRM shader compatibility fixes...');
@@ -1407,17 +1459,51 @@
                                     child.material.needsUpdate = true;
                                 }
                                 
-                                // Remove any shadow-related uniforms that might cause issues
+                                // Fix shader uniform issues
                                 if (child.material.uniforms) {
+                                    // Remove any shadow-related uniforms that might cause issues
                                     delete child.material.uniforms.shadowMap;
                                     delete child.material.uniforms.directionalShadowMap;
                                     delete child.material.uniforms.spotShadowMap;
                                     delete child.material.uniforms.pointShadowMap;
+                                    
+                                    // Ensure all uniforms have valid values
+                                    Object.keys(child.material.uniforms).forEach(key => {
+                                        const uniform = child.material.uniforms[key];
+                                        if (uniform && uniform.value === undefined) {
+                                            // Set safe default values for undefined uniforms
+                                            console.warn(`⚠️ Fixing undefined uniform: ${key}`);
+                                            if (key.includes('matrix') || key.includes('Matrix')) {
+                                                uniform.value = new THREE.Matrix4();
+                                            } else if (key.includes('color') || key.includes('Color')) {
+                                                uniform.value = new THREE.Color(1, 1, 1);
+                                            } else if (key.includes('vector') || key.includes('Vector')) {
+                                                uniform.value = new THREE.Vector3(0, 0, 0);
+                                            } else {
+                                                uniform.value = 0;
+                                            }
+                                        }
+                                    });
+                                }
+                                
+                                // If it's a MToon material, ensure proper setup
+                                if (child.material.isMToonMaterial) {
+                                    try {
+                                        // Ensure MToon material is properly configured
+                                        child.material.transparent = true;
+                                        child.material.alphaTest = 0.01;
+                                        child.material.needsUpdate = true;
+                                    } catch (e) {
+                                        console.warn('⚠️ MToon material setup error:', e.message);
+                                    }
                                 }
                             }
                         });
                         console.log('✅ VRM shader compatibility fixes applied');
                     }
+                    
+                    // Apply enhanced lighting specifically for the VRM character
+                    enhanceVRMLighting(vrmCharacter);
                     
                     // Also apply textures to skeleton for comparison
                     await characterSystem.applyVRMTextureToSkeleton('./assets/avatars/ichika.vrm');
@@ -1982,6 +2068,13 @@
                 }
             };
 
+            // Enhanced animation loop with proper error handling - Initialize variables first
+            let consecutiveErrors = 0;
+            let renderErrorCount = 0;
+            const maxConsecutiveErrors = 10;
+            let animationHalted = false;
+            let lastErrorMessage = '';
+            let errorMessageCount = 0;
 
             // Start animation loop and load first animation
             enhancedAnimate();
@@ -1989,9 +2082,13 @@
             // Load default animation
             updateLoadingStatus('Loading default animation...');
             loadAnimation('neutral_reference.bvh');
-            
-            // Enhanced animation loop with comprehensive error handling
+                        
             function enhancedAnimate() {
+                if (animationHalted) {
+                    console.log('🛑 Animation halted due to persistent errors');
+                    return;
+                }
+                            
                 try {
                     requestAnimationFrame(enhancedAnimate);
                     
@@ -2052,99 +2149,117 @@
                     // Safe rendering with error handling
                     try {
                         renderer.render(scene, camera);
+                        consecutiveErrors = 0; // Reset on successful render
+                        renderErrorCount = 0;
                     } catch (renderError) {
-                        console.warn('⚠️ Render error (attempting fix):', renderError.message);
-                        // Try to fix materials and continue
-                        fixSceneMaterials();
+                        consecutiveErrors++;
+                        renderErrorCount++;
+                        
+                        // Track repeated error messages
+                        if (renderError.message === lastErrorMessage) {
+                            errorMessageCount++;
+                        } else {
+                            lastErrorMessage = renderError.message;
+                            errorMessageCount = 1;
+                        }
+                        
+                        console.warn(`⚠️ Render error #${renderErrorCount} (consecutive: ${consecutiveErrors}): ${renderError.message}`);
+                        
+                        // Log stack trace for first few errors to help debugging
+                        if (renderErrorCount <= 3) {
+                            console.error('Error stack:', renderError.stack);
+                        }
+                        
+                        // Try different fix strategies based on error count
+                        if (consecutiveErrors < maxConsecutiveErrors) {
+                            if (consecutiveErrors <= 3) {
+                                console.log('🔧 Attempting to fix scene materials...');
+                                fixSceneMaterials();
+                            } else if (consecutiveErrors <= 6) {
+                                console.log('🔧 Attempting to compile materials...');
+                                compileAllMaterials();
+                            } else {
+                                console.log('🔧 Running material diagnostics...');
+                                diagnoseMaterials();
+                            }
+                        } else {
+                            console.error(`💥 Too many consecutive render errors (${consecutiveErrors}). HALTING ANIMATION.`);
+                            console.error(`Last error repeated ${errorMessageCount} times: ${lastErrorMessage}`);
+                            animationHalted = true;
+                            addErrorNotification();
+                            return;
+                        }
                     }
                     
                 } catch (error) {
                     console.error('❌ Animation loop error:', error);
-                    // Add delay to prevent rapid error loops
-                    setTimeout(() => requestAnimationFrame(enhancedAnimate), 100);
-                }
+                    consecutiveErrors++;
+                    
+                    if (consecutiveErrors >= maxConsecutiveErrors) {
+                        console.error(`💥 Too many consecutive animation errors (${consecutiveErrors}). HALTING ANIMATION.`);
+                        animationHalted = true;
+                        addErrorNotification();
+                        return;
+                    } else {
+                        // Add delay to prevent rapid error loops
+                        setTimeout(() => requestAnimationFrame(enhancedAnimate), 100);
+                    }
+                }   
             }
             
-            // Function to fix scene materials with shader issues
+            // Material fixing functions
             function fixSceneMaterials() {
-                console.log('🔧 Attempting to fix scene materials...');
+                console.log('🔧 Fixing scene materials for VRM compatibility...');
                 let fixedCount = 0;
                 
                 scene.traverse((object) => {
                     if (object.material) {
-                        try {
-                            if (Array.isArray(object.material)) {
-                                object.material.forEach((mat, index) => {
-                                    if (fixMaterial(mat, object.name + '_mat_' + index)) {
+                        const materials = Array.isArray(object.material) ? object.material : [object.material];
+                        materials.forEach((mat) => {
+                            // Ensure material has required properties and default undefined uniforms
+                            if (mat.uniforms) {
+                                for (const key in mat.uniforms) { // Use for...in for compatibility
+                                    const uniform = mat.uniforms[key];
+                                    if (uniform && uniform.value === undefined) {
+                                        uniform.value = getDefaultUniformValue(key);
                                         fixedCount++;
                                     }
-                                });
-                            } else {
-                                if (fixMaterial(object.material, object.name || 'unnamed')) {
-                                    fixedCount++;
                                 }
                             }
-                        } catch (e) {
-                            console.warn('⚠️ Failed to fix material for object:', object.name, e.message);
-                            // Replace with basic material as fallback
-                            object.material = new THREE.MeshBasicMaterial({ 
-                                color: 0x888888,
-                                transparent: true,
-                                opacity: 0.8
-                            });
-                            fixedCount++;
-                        }
+                            
+                            // Disable problematic features for VRM compatibility
+                            mat.castShadow = false;
+                            mat.receiveShadow = false;
+                            
+                            // Force material update
+                            mat.needsUpdate = true;
+                            
+                            // Convert to MeshLambertMaterial for better compatibility if it's a complex material
+                            if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial || mat.isMeshPhongMaterial) {
+                                const newMaterial = new THREE.MeshLambertMaterial({
+                                    map: mat.map,
+                                    color: mat.color,
+                                    emissive: mat.emissive,
+                                    transparent: mat.transparent, // Keep original transparency
+                                    opacity: mat.opacity,       // Keep original opacity
+                                    side: mat.side              // Keep original side
+                                });
+                                object.material = newMaterial;
+                                fixedCount++;
+                            }
+                        });
                     }
                 });
                 
                 if (fixedCount > 0) {
-                    console.log(`✅ Fixed ${fixedCount} materials`);
+                    console.log(`✅ Fixed ${fixedCount} materials with shader issues`);
                 }
-            }
-            
-            // Function to fix individual materials
-            function fixMaterial(material, objectName) {
-                if (!material) return false;
-                
-                let fixed = false;
-                
-                try {
-                    // Ensure material has required properties
-                    if (material.uniforms) {
-                        Object.keys(material.uniforms).forEach(key => {
-                            const uniform = material.uniforms[key];
-                            if (uniform && uniform.value === undefined) {
-                                uniform.value = getDefaultUniformValue(key);
-                                fixed = true;
-                            }
-                        });
-                    }
-                    
-                    // Disable problematic features for VRM compatibility
-                    material.castShadow = false;
-                    material.receiveShadow = false;
-                    
-                    // Ensure material properties are valid
-                    if (material.opacity === undefined) material.opacity = 1.0;
-                    if (material.transparent === undefined) material.transparent = false;
-                    
-                    // Force update
-                    material.needsUpdate = true;
-                    
-                } catch (e) {
-                    console.warn(`⚠️ Material fix failed for ${objectName}:`, e.message);
-                    return false;
-                }
-                
-                return fixed;
+                return fixedCount > 0;
             }
             
             // Get default values for common uniforms
             function getDefaultUniformValue(uniformName) {
                 const defaults = {
-                    'opacity': 1.0,
-                    'alphaTest': 0.0,
-                    'time': 0.0,
                     'resolution': new THREE.Vector2(window.innerWidth, window.innerHeight),
                     'cameraPosition': camera.position.clone(),
                     'modelMatrix': new THREE.Matrix4(),
@@ -2162,6 +2277,34 @@
                 };
                 
                 return defaults[uniformName] || 0.0;
+            }
+            
+            // Add error notification for user
+            function addErrorNotification() {
+                const notification = document.createElement('div');
+                notification.id = 'error-notification';
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #ff4444;
+                    color: white;
+                    padding: 15px;
+                    border-radius: 5px;
+                    z-index: 10000;
+                    max-width: 350px;
+                    font-family: monospace;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                `;
+                notification.innerHTML = `
+                    <strong>⚠️ Animation Halted</strong><br>
+                    Persistent rendering errors detected.<br>
+                    Last error: <code>${lastErrorMessage.substring(0, 50)}...</code><br>
+                    <button onclick="location.reload()" style="margin-top: 10px; padding: 5px 10px; background: white; color: #ff4444; border: none; border-radius: 3px; cursor: pointer;">
+                        Reload Page
+                    </button>
+                `;
+                document.body.appendChild(notification);
             }
             
             // Force material compilation for the scene
@@ -2978,6 +3121,76 @@
         }
 
 
+        // === VRM LIGHTING ENHANCEMENT ===
+        
+        // Enhanced VRM lighting setup following chat demo patterns
+        window.enhanceVRMLighting = function(vrmCharacter) {
+            if (!vrmCharacter || !vrmCharacter.vrm) {
+                console.warn('⚠️ No VRM character provided for lighting enhancement');
+                return;
+            }
+            
+            console.log('💡 Enhancing VRM character lighting...');
+            
+            // Update existing lights for better anime character lighting
+            if (window.keyLight) {
+                window.keyLight.intensity = 1.8; // Increase key light
+                window.keyLight.position.set(1.5, 2.5, 2); // Closer to character
+            }
+            
+            if (window.fillLight) {
+                window.fillLight.intensity = 1.2; // Softer fill
+                window.fillLight.color.setHex(0xfff5e6); // Warmer fill light
+            }
+            
+            if (window.rimLight) {
+                window.rimLight.intensity = 1.0;
+                window.rimLight.color.setHex(0xbbd4ff); // Cool rim light
+            }
+            
+            if (window.faceLight) {
+                window.faceLight.intensity = 1.5; // Important for face visibility
+                window.faceLight.position.set(0, 1.8, 1.2); // Focus on face height
+            }
+            
+            // Add character-specific lighting
+            const characterLight = new THREE.SpotLight(0xffffff, 0.8);
+            characterLight.position.set(0, 2, 1);
+            characterLight.target = vrmCharacter.vrm.scene;
+            characterLight.angle = Math.PI / 4;
+            characterLight.penumbra = 0.3;
+            characterLight.castShadow = false; // Avoid VRM shader conflicts
+            scene.add(characterLight);
+            
+            // Store reference for later adjustment
+            window.characterLight = characterLight;
+            
+            // Apply anime-style material enhancements
+            vrmCharacter.vrm.scene.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    // Enhance material properties for anime look
+                    if (child.material.isMToonMaterial) {
+                        // MToon materials get special treatment
+                        child.material.shadeMultiply = new THREE.Color(0.8, 0.8, 0.9); // Slightly cool shadows
+                        child.material.parametricRimColorFactor = 0.5; // Subtle rim lighting
+                        child.material.parametricRimLiftFactor = 0.3;
+                    } else if (child.material.isMeshStandardMaterial || child.material.isMeshBasicMaterial) {
+                        // Standard materials get improved lighting response
+                        child.material.roughness = 0.8; // Slightly rough for anime look
+                        child.material.metalness = 0.1; // Very low metalness
+                    }
+                    
+                    // Ensure materials receive lighting properly
+                    child.material.needsUpdate = true;
+                    child.castShadow = false; // Avoid shadow issues
+                    child.receiveShadow = false;
+                }
+            });
+            
+            console.log('✅ VRM lighting enhancement complete');
+        };
+
+
         // === CHARACTER SYSTEM CONTROL FUNCTIONS ===
         
         function initializeCharacterControls() {
@@ -3092,9 +3305,25 @@
             };
             
             window.testLighting = function() {
-                console.log('💡 Testing lighting setup...');
+                console.log('🌟 Testing enhanced anime lighting...');
                 
-                // Count lights in scene
+                // Check if lights exist
+                const lights = [
+                    ['Key Light', window.keyLight],
+                    ['Fill Light', window.fillLight], 
+                    ['Rim Light', window.rimLight],
+                    ['Face Light', window.faceLight]
+                ];
+                
+                lights.forEach(([name, light]) => {
+                    if (light) {
+                        console.log(`✅ ${name}: intensity ${light.intensity}, position (${light.position.x.toFixed(1)}, ${light.position.y.toFixed(1)}, ${light.position.z.toFixed(1)})`);
+                    } else {
+                        console.log(`❌ ${name}: not found`);
+                    }
+                });
+                
+                // Count all lights in scene
                 let lightCount = 0;
                 scene.traverse((child) => {
                     if (child.isLight) {
@@ -3107,11 +3336,122 @@
                 console.log('Renderer shadow mapping:', renderer.shadowMap.enabled);
                 console.log('Tone mapping:', renderer.toneMapping);
                 console.log('Tone mapping exposure:', renderer.toneMappingExposure);
+                console.log('🎨 Background: Gradient sky for anime aesthetic');
+                console.log('🔧 Shadows: Disabled for VRM compatibility');
                 
-                return `✅ ${lightCount} lights configured - check console for details`;
+                // Test lighting by temporarily changing key light intensity
+                if (window.keyLight) {
+                    const originalIntensity = window.keyLight.intensity;
+                    window.keyLight.intensity = 2.0;
+                    setTimeout(() => { window.keyLight.intensity = originalIntensity; }, 1000);
+                    console.log('💡 Key light intensity temporarily boosted for 1 second');
+                }
+                
+                // Check VRM character lighting
+                if (characterSystem?.vrmCharacter?.vrm?.scene) {
+                    console.log('🎭 VRM character detected - lighting optimized for anime style');
+                    console.log('📊 VRM scene children:', characterSystem.vrmCharacter.vrm.scene.children.length);
+                } else {
+                    console.log('⚠️ No VRM character loaded yet');
+                }
+                
+                return `✅ ${lightCount} lights configured - enhanced anime lighting active`;
             };
             
-            // Function to fix VRM shader issues on demand
+            // Function to improve lighting and contrast for anime characters
+            window.improvedLighting = function() {
+                console.log('✨ Applying improved anime lighting...');
+                
+                // Use the enhanced VRM lighting function if VRM character is available
+                if (window.vrmCharacter) {
+                    enhanceVRMLighting(window.vrmCharacter);
+                }
+                
+                // Boost key light for better character visibility
+                if (window.keyLight) {
+                    window.keyLight.intensity = 2.0;
+                    console.log('💡 Key light boosted to 2.0');
+                }
+                
+                // Enhance face light for anime style
+                if (window.faceLight) {
+                    window.faceLight.intensity = 1.5;
+                    window.faceLight.angle = Math.PI / 5; // Wider angle
+                    console.log('💡 Face light enhanced');
+                }
+                
+                // Adjust fill light for better balance
+                if (window.fillLight) {
+                    window.fillLight.intensity = 1.2;
+                    console.log('💡 Fill light adjusted');
+                }
+                
+                // Boost tone mapping exposure for anime brightness
+                renderer.toneMappingExposure = 1.2;
+                console.log('🎨 Tone mapping exposure increased');
+                
+                statusDiv.textContent = 'Enhanced anime lighting applied!';
+                return '✨ Improved anime lighting applied!';
+            };
+            
+            // Function to focus camera on Ichika's face
+            window.focusOnFace = function() {
+                if (window.vrmCharacter) {
+                    // Use Ichika's specific camera settings
+                    camera.position.set(0, 1.35, -1.8); // From ichika.json preview camera
+                    camera.lookAt(0, 1.15, 0);
+                    camera.fov = 40;
+                    camera.updateProjectionMatrix();
+                    console.log('📷 Camera focused on Ichika\'s face');
+                    return 'Camera focused on face';
+                } else {
+                    console.log('⚠️ No VRM character loaded');
+                    return 'No character to focus on';
+                }
+            };
+            
+            // Function to set optimal character view
+            window.fullBodyView = function() {
+                camera.position.set(0, 1.6, 2.5);
+                camera.lookAt(0, 1.0, 0);
+                camera.fov = 40;
+                camera.updateProjectionMatrix();
+                console.log('📷 Full body view set');
+                return 'Full body view active';
+            };
+            
+            // Function to apply Ichika's idle animation and expressions
+            window.animateIchika = function() {
+                if (window.vrmCharacter && window.vrmCharacter.vrm) {
+                    try {
+                        // Apply some basic facial expressions
+                        const expressionManager = window.vrmCharacter.vrm.expressionManager;
+                        if (expressionManager) {
+                            // Set a subtle happy expression
+                            expressionManager.setValue('happy', 0.3);
+                            expressionManager.setValue('relaxed', 0.2);
+                            expressionManager.update();
+                            console.log('😊 Applied happy expression to Ichika');
+                        }
+                        
+                        // Add subtle breathing animation
+                        if (window.vrmCharacter.vrm.humanoid) {
+                            const chest = window.vrmCharacter.vrm.humanoid.getRawBoneNode('chest');
+                            if (chest) {
+                                const time = Date.now() * 0.001;
+                                chest.rotation.x = Math.sin(time * 2) * 0.02; // Subtle breathing
+                            }
+                        }
+                        
+                        return '😊 Ichika animation applied';
+                    } catch (e) {
+                        console.warn('⚠️ Animation error:', e.message);
+                        return 'Animation failed: ' + e.message;
+                    }
+                } else {
+                    return 'No VRM character loaded';
+                }
+            };
             window.fixVRMShaders = function() {
                 console.log('🔧 Attempting to fix VRM shader issues...');
                 

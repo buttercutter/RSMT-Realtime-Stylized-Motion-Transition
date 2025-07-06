@@ -292,8 +292,6 @@ class VRMMaterialExtractor {
     createMeshForBone(bone, bodyMaterial, headMaterial) {
         let geometry;
         // Use a simple MeshBasicMaterial for debugging shader issues
-        const debugMaterial = new window.THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Bright green for visibility
-        
         // Choose geometry based on bone type
         if (bone.name.includes('Head')) {
             geometry = new window.THREE.SphereGeometry(0.12, 16, 16);
@@ -305,7 +303,12 @@ class VRMMaterialExtractor {
             geometry = new window.THREE.CylinderGeometry(0.06, 0.06, 0.25, 8);
         }
         
-        const material = debugMaterial; // Always use the debug material
+        const material = new window.THREE.MeshLambertMaterial({ // Use a simple material for skeleton bones
+            color: (bone.name.includes('Head') ? headMaterial.color : bodyMaterial.color),
+            emissive: (bone.name.includes('Head') ? headMaterial.emissive : bodyMaterial.emissive),
+            transparent: true,
+            opacity: 0.9
+        });
         
         // Create mesh and attach to bone
         const mesh = new window.THREE.Mesh(geometry, material);
