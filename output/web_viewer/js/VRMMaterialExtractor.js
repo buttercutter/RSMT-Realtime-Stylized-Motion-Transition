@@ -140,7 +140,38 @@ class VRMMaterialExtractor {
             return;
         }
         
-        // Traverse the scene and extract materials
+        // First pass: Replace all problematic materials in the actual VRM scene
+        gltf.scene.traverse((child) => {
+            if (child.isMesh && child.material) {
+                // Replace any VRM-specific materials with safe ones
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                
+                materials.forEach((material, index) => {
+                    if (material.type && (material.type.includes('VRM') || material.type.includes('MToon'))) {
+                        console.log(`Replacing VRM material ${material.type} with MeshBasicMaterial for ${child.name}`);
+                        const safeMaterial = new window.THREE.MeshBasicMaterial({
+                            color: material.color || new window.THREE.Color(0xFFFFFF),
+                            map: material.map || null,
+                            transparent: material.transparent || false,
+                            opacity: material.opacity !== undefined ? material.opacity : 1.0,
+                            side: window.THREE.FrontSide
+                        });
+                        
+                        if (Array.isArray(child.material)) {
+                            child.material[index] = safeMaterial;
+                        } else {
+                            child.material = safeMaterial;
+                        }
+                    }
+                });
+                
+                // Also disable shadows for all VRM meshes
+                child.castShadow = false;
+                child.receiveShadow = false;
+            }
+        });
+        
+        // Second pass: Extract materials for our skeleton
         gltf.scene.traverse((child) => {
             if (child.isMesh && child.material) {
                 this.processMeshMaterial(child);
@@ -156,12 +187,75 @@ class VRMMaterialExtractor {
         console.log(`Extracted ${this.extractedMaterials.size} material categories from GLTF/VRM`);
     }
     
+    // Validate and fix material properties to prevent shader errors
+    validateMaterial(material) {
+        if (!material) return null;
+        
+        // Ensure color is valid
+        if (material.color && !material.color.isColor) {
+            if (typeof material.color === 'number') {
+                material.color = new window.THREE.Color(material.color);
+            } else if (typeof material.color === 'string') {
+                material.color = new window.THREE.Color(material.color);
+            } else {
+                material.color = new window.THREE.Color(0xFFFFFF);
+            }
+        }
+        
+        // Ensure emissive is valid
+        if (material.emissive && !material.emissive.isColor) {
+            if (typeof material.emissive === 'number') {
+                material.emissive = new window.THREE.Color(material.emissive);
+            } else if (typeof material.emissive === 'string') {
+                material.emissive = new window.THREE.Color(material.emissive);
+            } else {
+                material.emissive = new window.THREE.Color(0x000000);
+            }
+        }
+        
+        // Validate uniforms if present
+        if (material.uniforms) {
+            Object.keys(material.uniforms).forEach(key => {
+                const uniform = material.uniforms[key];
+                if (uniform && uniform.value !== undefined) {
+                    // Check for Vector3 uniforms
+                    if (uniform.value && uniform.value.isVector3) {
+                        if (isNaN(uniform.value.x) || isNaN(uniform.value.y) || isNaN(uniform.value.z)) {
+                            uniform.value.set(0, 0, 0);
+                        }
+                    }
+                    // Check for Color uniforms
+                    if (uniform.value && uniform.value.isColor) {
+                        if (isNaN(uniform.value.r) || isNaN(uniform.value.g) || isNaN(uniform.value.b)) {
+                            uniform.value.setRGB(1, 1, 1);
+                        }
+                    }
+                }
+            });
+        }
+        
+        return material;
+    }
+
     processMeshMaterial(mesh) {
-        const material = mesh.material;
-        const meshName = mesh.name.toLowerCase();
+        let material = mesh.material;
+        // Validate and fix material properties before processing
+        material = this.validateMaterial(material);
+
+        let extractedMaterial;
+        // Always create a new MeshBasicMaterial to ensure shader compatibility
+        extractedMaterial = new window.THREE.MeshBasicMaterial({
+            color: new window.THREE.Color(material.color && material.color.isColor ? material.color.getHex() : (typeof material.color === 'number' ? material.color : 0xFFFFFF)), // Ensure valid color
+            map: material.map || null,
+            transparent: material.transparent || false,
+            opacity: material.opacity !== undefined ? material.opacity : 1.0,
+            side: window.THREE.FrontSide // Ensure proper rendering
+        });
+        console.log(`Created new MeshBasicMaterial for ${mesh.name} to prevent shader errors.` );
         
         // Determine material category based on mesh name
         let category = 'body'; // default
+        const meshName = mesh.name.toLowerCase();
         if (meshName.includes('hair')) {
             category = 'hair';
         } else if (meshName.includes('face') || meshName.includes('head')) {
@@ -171,54 +265,7 @@ class VRMMaterialExtractor {
         } else if (meshName.includes('cloth') || meshName.includes('dress') || meshName.includes('shirt')) {
             category = 'clothing';
         }
-        
-        let clonedMaterial;
-        try {
-            if (material && typeof material.clone === 'function') {
-                clonedMaterial = material.clone();
-            } else {
-                // Fallback: Create a new MeshStandardMaterial from existing properties
-                console.warn(`Material ${mesh.name} does not have a clone method or is not a standard material. Creating new material.`);
-                
-                // Check if THREE is available
-                if (!window.THREE) {
-                    console.error('THREE.js not available for material creation');
-                    return;
-                }
-                
-                const newMaterial = new window.THREE.MeshStandardMaterial();
-                
-                // Safely copy properties if they exist
-                if (material) {
-                    try {
-                        if (material.color) newMaterial.color.copy(material.color);
-                        if (material.map) newMaterial.map = material.map;
-                        if (material.emissive) newMaterial.emissive.copy(material.emissive);
-                        if (material.roughness !== undefined) newMaterial.roughness = material.roughness;
-                        if (material.metalness !== undefined) newMaterial.metalness = material.metalness;
-                        if (material.normalMap) newMaterial.normalMap = material.normalMap;
-                        if (material.transparent !== undefined) newMaterial.transparent = material.transparent;
-                        if (material.opacity !== undefined) newMaterial.opacity = material.opacity;
-                        if (material.side !== undefined) newMaterial.side = material.side;
-                        
-                        // Copy any other common properties
-                        if (material.name) newMaterial.name = material.name + '_cloned';
-                    } catch (propError) {
-                        console.warn('Error copying material properties:', propError);
-                    }
-                } else {
-                    // Create basic colored material if source material is null/undefined
-                    newMaterial.color.setHex(0x888888);
-                }
-                
-                clonedMaterial = newMaterial;
-            }
-        } catch (cloneError) {
-            console.error('Error cloning material for mesh', mesh.name, ':', cloneError);
-            // Create basic fallback material
-            clonedMaterial = new window.THREE.MeshStandardMaterial({ color: 0x888888 });
-        }
-        
+
         // Store the extracted material
         if (!this.extractedMaterials.has(category)) {
             this.extractedMaterials.set(category, []);
@@ -226,7 +273,7 @@ class VRMMaterialExtractor {
         
         this.extractedMaterials.get(category).push({
             name: mesh.name,
-            material: clonedMaterial,
+            material: extractedMaterial,
             originalMesh: mesh,
             geometry: mesh.geometry
         });
@@ -291,7 +338,7 @@ class VRMMaterialExtractor {
     
     createMeshForBone(bone, bodyMaterial, headMaterial) {
         let geometry;
-        // Use a simple MeshBasicMaterial for debugging shader issues
+        // Use a simple MeshBasicMaterial for absolute shader compatibility
         // Choose geometry based on bone type
         if (bone.name.includes('Head')) {
             geometry = new window.THREE.SphereGeometry(0.12, 16, 16);
@@ -303,17 +350,18 @@ class VRMMaterialExtractor {
             geometry = new window.THREE.CylinderGeometry(0.06, 0.06, 0.25, 8);
         }
         
-        const material = new window.THREE.MeshLambertMaterial({ // Use a simple material for skeleton bones
-            color: (bone.name.includes('Head') ? headMaterial.color : bodyMaterial.color),
-            emissive: (bone.name.includes('Head') ? headMaterial.emissive : bodyMaterial.emissive),
+        // Use MeshBasicMaterial for maximum shader compatibility
+        const material = new window.THREE.MeshBasicMaterial({ 
+            color: new window.THREE.Color(bone.name.includes('Head') ? (headMaterial.color && headMaterial.color.isColor ? headMaterial.color.getHex() : 0xFFCCCC) : (bodyMaterial.color && bodyMaterial.color.isColor ? bodyMaterial.color.getHex() : 0xFFCCCC)),
             transparent: true,
-            opacity: 0.9
+            opacity: 0.9,
+            side: window.THREE.FrontSide
         });
         
         // Create mesh and attach to bone
         const mesh = new window.THREE.Mesh(geometry, material);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
+        mesh.castShadow = false; // Disable shadows to prevent shader issues
+        mesh.receiveShadow = false;
         
         // Position mesh relative to bone
         if (bone.name.includes('Head')) {
@@ -328,31 +376,35 @@ class VRMMaterialExtractor {
     }
     
     createDefaultMaterial() {
-        return new window.THREE.MeshLambertMaterial({
+        return new window.THREE.MeshBasicMaterial({
             color: 0xFFCCCC, // Skin-like color
             transparent: true,
-            opacity: 0.9
+            opacity: 0.9,
+            side: window.THREE.FrontSide
         });
     }
     
     // Create default materials when none are extracted
     createDefaultMaterials() {
-        const bodyMaterial = new window.THREE.MeshLambertMaterial({
+        const bodyMaterial = new window.THREE.MeshBasicMaterial({
             color: 0xFFDDBB, // Light skin tone
             transparent: true,
-            opacity: 0.9
+            opacity: 0.9,
+            side: window.THREE.FrontSide
         });
         
-        const headMaterial = new window.THREE.MeshLambertMaterial({
+        const headMaterial = new window.THREE.MeshBasicMaterial({
             color: 0xFFE4C4, // Slightly lighter for face
             transparent: true,
-            opacity: 0.9
+            opacity: 0.9,
+            side: window.THREE.FrontSide
         });
         
-        const clothingMaterial = new window.THREE.MeshLambertMaterial({
+        const clothingMaterial = new window.THREE.MeshBasicMaterial({
             color: 0x4169E1, // Blue clothing
             transparent: true,
-            opacity: 0.9
+            opacity: 0.9,
+            side: window.THREE.FrontSide
         });
         
         this.extractedMaterials.set('body', [{
@@ -376,7 +428,7 @@ class VRMMaterialExtractor {
             geometry: null
         }]);
         
-        console.log('Created default materials for body, head, and clothing');
+        console.log('Created default MeshBasicMaterials for body, head, and clothing');
     }
     
     // Get all extracted materials for external use

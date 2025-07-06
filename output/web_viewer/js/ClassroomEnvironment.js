@@ -276,47 +276,47 @@ class ClassroomEnvironment {
         const ambientLight = new window.THREE.AmbientLight(0x404040, 0.6);
         this.environment.lights.push(ambientLight);
         
-        // Main classroom lighting (ceiling lights)
-        for (let i = -8; i <= 8; i += 8) {
-            for (let j = -6; j <= 6; j += 6) {
-                const light = new window.THREE.DirectionalLight(0xFFFFFF, 0.8);
-                light.position.set(i, 8, j);
-                light.target.position.set(i, 0, j);
-                light.castShadow = true;
-                
-                // Configure shadow properties
-                light.shadow.mapSize.width = 1024;
-                light.shadow.mapSize.height = 1024;
-                light.shadow.camera.near = 0.5;
-                light.shadow.camera.far = 15;
-                light.shadow.camera.left = -10;
-                light.shadow.camera.right = 10;
-                light.shadow.camera.top = 10;
-                light.shadow.camera.bottom = -10;
-                
-                this.environment.lights.push(light);
-                this.environment.lights.push(light.target);
-            }
-        }
-        
-        // Window light (simulated)
-        const windowLight = new window.THREE.DirectionalLight(0xFFFFDD, 0.5);
-        windowLight.position.set(15, 6, 0);
-        windowLight.target.position.set(0, 0, 0);
-        this.environment.lights.push(windowLight);
-        this.environment.lights.push(windowLight.target);
+        // Single Directional Light
+        const directionalLight = new window.THREE.DirectionalLight(0xFFFFFF, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        directionalLight.target.position.set(0, 0, 0);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 1024;
+        directionalLight.shadow.mapSize.height = 1024;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 20;
+        directionalLight.shadow.camera.left = -10;
+        directionalLight.shadow.camera.right = 10;
+        directionalLight.shadow.camera.top = 10;
+        directionalLight.shadow.camera.bottom = -10;
+        directionalLight.add(directionalLight.target); // Add target as a child of the light
+        this.environment.lights.push(directionalLight);
         
         console.log('Classroom lighting created');
     }
     
     addEnvironmentToScene(environment) {
+        console.log('🏫 Adding environment to scene...');
+        console.log('🏫 this.scene:', this.scene);
+        console.log('🏫 this.scene type:', typeof this.scene);
+        console.log('🏫 environment:', environment);
+        
         if (environment.scene) {
             // GLB-based environment
+            console.log('🏫 Adding GLB environment scene');
             this.scene.add(environment.scene);
         } else {
             // Procedural environment
-            environment.objects.forEach(obj => this.scene.add(obj));
-            environment.lights.forEach(light => this.scene.add(light));
+            console.log('🏫 Adding procedural environment objects:', environment.objects.length);
+            console.log('🏫 Adding procedural environment lights:', environment.lights.length);
+            environment.objects.forEach(obj => {
+                console.log('🏫 Adding object:', obj);
+                this.scene.add(obj);
+            });
+            environment.lights.forEach(light => {
+                console.log('🏫 Adding light:', light);
+                this.scene.add(light);
+            });
         }
         
         console.log('Environment added to scene');

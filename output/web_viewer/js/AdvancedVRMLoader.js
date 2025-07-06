@@ -166,7 +166,7 @@ class AdvancedVRMLoader {
         if (!vrm.humanoid) return;
 
         // Subtle breathing animation
-        const chestBone = vrm.humanoid.getBoneNode('chest');
+        const chestBone = vrm.humanoid.getNormalizedBoneNode('chest');
         if (chestBone) {
             const originalRotation = chestBone.rotation.clone();
             
@@ -236,7 +236,7 @@ class AdvancedVRMLoader {
     setupCameraLooking(vrm, camera) {
         if (!vrm.humanoid) return;
 
-        const headBone = vrm.humanoid.getBoneNode('head');
+        const headBone = vrm.humanoid.getNormalizedBoneNode('head');
         if (!headBone) return;
 
         // Set up camera looking behavior

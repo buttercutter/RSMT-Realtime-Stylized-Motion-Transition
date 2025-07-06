@@ -268,7 +268,7 @@ class ClassroomCameraController {
     focusOnFace() {
         if (!this.characterSystem.vrmModel) return;
         
-        const headBone = this.characterSystem.vrmModel.humanoid?.getBoneNode('head');
+        const headBone = this.characterSystem.vrmModel.humanoid?.getRawBoneNode('head');
         if (headBone) {
             const headPos = new this.THREE.Vector3();
             headBone.getWorldPosition(headPos);
@@ -281,8 +281,8 @@ class ClassroomCameraController {
     focusOnHands() {
         if (!this.characterSystem.vrmModel) return;
         
-        const leftHand = this.characterSystem.vrmModel.humanoid?.getBoneNode('leftHand');
-        const rightHand = this.characterSystem.vrmModel.humanoid?.getBoneNode('rightHand');
+        const leftHand = this.characterSystem.vrmModel.humanoid?.getNormalizedBoneNode('leftHand');
+        const rightHand = this.characterSystem.vrmModel.humanoid?.getRawBoneNode('rightHand');
         
         if (leftHand && rightHand) {
             const leftPos = new this.THREE.Vector3();

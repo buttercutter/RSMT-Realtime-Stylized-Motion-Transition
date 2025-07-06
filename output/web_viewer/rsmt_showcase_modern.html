@@ -302,7 +302,7 @@
                     
                     <button onclick="focusOnFace()" style="padding: 8px 16px; background: #06b6d4; color: white; border: none; border-radius: 4px; cursor: pointer;">👤 Focus Face</button>
                     <button onclick="toggleFacialExpressions()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">😊 Toggle Expressions</button>
-                    <button onclick="fixVRMShaders()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 Fix VRM Shaders</button>
+                    
                     <button onclick="testLighting()" style="padding: 8px 16px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;">💡 Test Lighting</button>
                     <button onclick="improvedLighting()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">✨ Enhance Lighting</button>
                     <button onclick="focusOnFace()" style="padding: 8px 16px; background: #8b5cf6; color: white; border: none; border-radius: 4px; cursor: pointer;">👁️ Focus Face</button>
@@ -310,7 +310,7 @@
                     <button onclick="animateIchika()" style="padding: 8px 16px; background: #ec4899; color: white; border: none; border-radius: 4px; cursor: pointer;">😊 Animate Ichika</button>
                     <button onclick="fixSceneMaterials()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 Fix Materials</button>
                     <button onclick="compileAllMaterials()" style="padding: 8px 16px; background: #7c3aed; color: white; border: none; border-radius: 4px; cursor: pointer;">⚙️ Compile Materials</button>
-                    <button onclick="diagnoseMaterials()" style="padding: 8px 16px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer;">🔍 Diagnose Materials</button>
+                    
                     <button onclick="toggleShadows()" style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer;">🌑 Toggle Shadows</button>
                 </div>
             </div>
@@ -423,109 +423,244 @@
             console.log(`${available ? '✅' : '❌'} ${name}: ${available ? 'Available' : 'Not Found'}`);
         });
         
-        // Initialize the main application
-        async function initializeRSMTViewer() {
-            console.log('🔄 Initializing RSMT Viewer...');
+        // EARLY GLOBAL VALIDATION FUNCTIONS - Available immediately
+        window.validateAndFixMaterialEarly = function(material) {
+            if (!material) return null;
             
-            // Wait for THREE.js to load
-            if (!window.THREE) {
-                console.error('❌ THREE.js not loaded');
-                updateLoadingStatus('Error: THREE.js not loaded');
-                return;
-            }
-            
-            console.log('✅ THREE.js loaded successfully');
-            
-            // Initialize 3D scene first
-            updateLoadingStatus('Creating 3D scene...');
-            
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a1a2e);
-            
-            const camera = new THREE.PerspectiveCamera(
-                75, 
-                window.innerWidth / window.innerHeight, 
-                0.1, 
-                1000
-            );
-            
-            const renderer = new THREE.WebGLRenderer({ 
-                antialias: true,
-                alpha: true,
-                preserveDrawingBuffer: true,
-                powerPreference: "high-performance"
-            });
-            
-            // Enhanced renderer configuration for VRM compatibility
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = false; // Disabled for VRM compatibility
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.outputColorSpace = THREE.SRGBColorSpace;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.2;
-            
-            // Add comprehensive error handling
-            
-            // Handle WebGL context loss
-            renderer.domElement.addEventListener('webglcontextlost', function(event) {
-                event.preventDefault();
-                console.warn('⚠️ WebGL context lost');
-                updateLoadingStatus('WebGL context lost - attempting recovery...');
-            });
-            
-            renderer.domElement.addEventListener('webglcontextrestored', function(event) {
-                console.log('✅ WebGL context restored');
-                updateLoadingStatus('WebGL context restored');
-            });
-            
-            // Append renderer to DOM
-            document.getElementById('container').appendChild(renderer.domElement);
-            
-            // Set up camera and controls
-            camera.position.set(0, 1.6, 3);
-            
-            // Initialize skeleton group
-            const skeletonGroup = new THREE.Group();
-            scene.add(skeletonGroup);
-            
-            // Make scene globally accessible
-            window.scene = scene;
-            window.camera = camera;
-            window.renderer = renderer;
-            window.skeletonGroup = skeletonGroup;
-            
-            updateLoadingStatus('Loading Character System...');
-            
-            // Initialize character system
             try {
-                // Create character system instance (not a static init call)
-                const characterSystem = new window.EnhancedCharacterSystem(scene, skeletonGroup);
+                // Ensure color is valid
+                if (material.color && !material.color.isColor) {
+                    if (typeof material.color === 'number') {
+                        material.color = new THREE.Color(material.color);
+                    } else if (typeof material.color === 'string') {
+                        material.color = new THREE.Color(material.color);
+                    } else {
+                        material.color = new THREE.Color(0xFFFFFF);
+                    }
+                }
                 
-                // Initialize textured skeleton in classroom with Ichika
-                await characterSystem.initializeTexturedSkeletonInClassroom('ichika');
-                console.log('✅ Character System initialized');
-                updateLoadingStatus('Loading Environment...');
+                // Validate uniforms if present
+                if (material.uniforms) {
+                    Object.keys(material.uniforms).forEach(key => {
+                        const uniform = material.uniforms[key];
+                        if (uniform && uniform.value !== undefined) {
+                            // Check for Vector3 uniforms
+                            if (uniform.value && uniform.value.isVector3) {
+                                if (isNaN(uniform.value.x) || isNaN(uniform.value.y) || isNaN(uniform.value.z)) {
+                                    uniform.value.set(0, 0, 0);
+                                }
+                            }
+                            // Check for Color uniforms
+                            if (uniform.value && uniform.value.isColor) {
+                                if (isNaN(uniform.value.r) || isNaN(uniform.value.g) || isNaN(uniform.value.b)) {
+                                    uniform.value.setRGB(1, 1, 1);
+                                }
+                            }
+                        }
+                    });
+                }
                 
-                // Initialize environment - create instance and load classroom
-                const classroomEnvironment = new window.ClassroomEnvironment(scene);
-                await classroomEnvironment.loadClassroom();
-                console.log('✅ Environment loaded');
-                
-                // Finalize loading
-                loadingDiv.style.display = 'none';
-                container.style.display = 'block';
-                
-                // Update status
-                statusDiv.textContent = 'Ready';
-                console.log('🎉 RSMT Viewer initialized successfully');
-                
+                material.needsUpdate = true;
+                return material;
             } catch (error) {
-                console.error('❌ Error during initialization:', error);
-                updateLoadingStatus(`Error: ${error.message}`);
+                console.warn('⚠️ Material validation error:', error);
+                return material;
             }
+        };
+        
+        window.fixVRMShadersEarly = function() {
+            console.log('🔧 Early VRM shader fix attempt...');
+            try {
+                if (window.scene) {
+                    let fixedCount = 0;
+                    window.scene.traverse((object) => {
+                        if (object.isMesh && object.material) {
+                            const materials = Array.isArray(object.material) ? object.material : [object.material];
+                            
+                            materials.forEach((material, index) => {
+                                if (material.type && (material.type.includes('VRM') || material.type.includes('MToon'))) {
+                                    // Replace VRM materials with simple MeshLambertMaterial
+                                    const newMaterial = new THREE.MeshLambertMaterial({
+                                        color: material.color || 0xFFFFFF,
+                                        map: material.map || null,
+                                        transparent: material.transparent || false,
+                                        opacity: material.opacity !== undefined ? material.opacity : 1.0
+                                    });
+                                    
+                                    if (Array.isArray(object.material)) {
+                                        object.material[index] = newMaterial;
+                                    } else {
+                                        object.material = newMaterial;
+                                    }
+                                    fixedCount++;
+                                }
+                            });
+                        }
+                    });
+                    console.log(`✅ Early fix applied to ${fixedCount} materials`);
+                    return `Fixed ${fixedCount} materials`;
+                } else {
+                    console.log('❌ No scene available for early fix');
+                    return 'No scene available';
+                }
+            } catch (error) {
+                console.error('❌ Early shader fix error:', error);
+                return 'Fix failed: ' + error.message;
+            }
+        };
+        
+        // Force material update and compilation for all objects in the scene
+    function forceMaterialUpdateAndCompile() {
+        console.log('🔄 Forcing material update and compilation for all scene objects...');
+        scene.traverse((object) => {
+            if (object.isMesh) {
+                if (Array.isArray(object.material)) {
+                    object.material.forEach(mat => {
+                        if (mat.isMaterial) {
+                            mat.needsUpdate = true;
+                            if (mat.map) mat.map.needsUpdate = true;
+                            if (mat.emissiveMap) mat.emissiveMap.needsUpdate = true;
+                            if (mat.normalMap) mat.normalMap.needsUpdate = true;
+                            if (mat.roughnessMap) mat.roughnessMap.needsUpdate = true;
+                            if (mat.metalnessMap) mat.metalnessMap.needsUpdate = true;
+                            if (mat.aoMap) mat.aoMap.needsUpdate = true;
+                            if (mat.lightMap) mat.lightMap.needsUpdate = true;
+                            if (mat.alphaMap) mat.alphaMap.needsUpdate = true;
+                            if (mat.envMap) mat.envMap.needsUpdate = true;
+                        }
+                    });
+                } else if (object.material && object.material.isMaterial) {
+                    object.material.needsUpdate = true;
+                    if (object.material.map) object.material.map.needsUpdate = true;
+                    if (object.material.emissiveMap) object.material.emissiveMap.needsUpdate = true;
+                    if (object.material.normalMap) object.material.normalMap.needsUpdate = true;
+                    if (object.material.roughnessMap) object.material.roughnessMap.needsUpdate = true;
+                    if (object.material.metalnessMap) object.material.metalnessMap.needsUpdate = true;
+                    if (object.material.aoMap) object.material.aoMap.needsUpdate = true;
+                    if (object.material.lightMap) object.material.lightMap.needsUpdate = true;
+                    if (object.material.alphaMap) object.material.alphaMap.needsUpdate = true;
+                    if (object.material.envMap) object.material.envMap.needsUpdate = true;
+                }
+            }
+        });
+        try {
+            renderer.compile(scene, camera);
+            console.log('✅ Scene compilation complete.');
+        } catch (e) {
+            console.warn('Scene compilation failed:', e.message);
+        }
+    }
+
+    // Initialize the main application
+    async function initializeRSMTViewer() {
+        console.log('🔄 Initializing RSMT Viewer...');
+        
+        // Wait for THREE.js to load
+        if (!window.THREE) {
+            console.error('❌ THREE.js not loaded');
+            updateLoadingStatus('Error: THREE.js not loaded');
+            return;
         }
         
-        const loadingDiv = document.getElementById('loading');
+        console.log('✅ THREE.js loaded successfully');
+        
+        // Initialize 3D scene first
+        updateLoadingStatus('Creating 3D scene...');
+        
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+        
+        const camera = new THREE.PerspectiveCamera(
+            75, 
+            window.innerWidth / window.innerHeight, 
+            0.1, 
+            1000
+        );
+        
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            alpha: true,
+            preserveDrawingBuffer: true,
+            powerPreference: "high-performance"
+        });
+        
+        // Enhanced renderer configuration for VRM compatibility
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = false; // Disabled for VRM compatibility
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        
+        // Add comprehensive error handling
+        
+        // Handle WebGL context loss
+        renderer.domElement.addEventListener('webglcontextlost', function(event) {
+            event.preventDefault();
+            console.warn('⚠️ WebGL context lost');
+            updateLoadingStatus('WebGL context lost - attempting recovery...');
+        });
+        
+        renderer.domElement.addEventListener('webglcontextrestored', function(event) {
+            console.log('✅ WebGL context restored');
+            updateLoadingStatus('WebGL context restored');
+        });
+        
+        // Append renderer to DOM
+        document.getElementById('container').appendChild(renderer.domElement);
+        
+        // Set up camera and controls
+        camera.position.set(0, 1.6, 3);
+        
+        // Initialize skeleton group
+        const skeletonGroup = new THREE.Group();
+        scene.add(skeletonGroup);
+        
+        // Make scene globally accessible
+        window.scene = scene;
+        window.camera = camera;
+        window.renderer = renderer;
+        window.skeletonGroup = skeletonGroup;
+        
+        updateLoadingStatus('Loading Character System...');
+        
+        // Initialize character system
+        try {
+            // Create character system instance (not a static init call)
+            const characterSystem = new window.EnhancedCharacterSystem(scene, skeletonGroup);
+            
+            // Initialize textured skeleton in classroom with Ichika
+            await characterSystem.initializeTexturedSkeletonInClassroom('ichika');
+            console.log('✅ Character System initialized');
+
+            updateLoadingStatus('Loading Environment...');
+            
+            // Initialize environment - create instance and load classroom
+            const classroomEnvironment = new window.ClassroomEnvironment(scene);
+            await classroomEnvironment.loadClassroom();
+            console.log('✅ Environment loaded');
+            
+            // Finalize loading
+            loadingDiv.style.display = 'none';
+            container.style.display = 'block';
+            
+            // Update status
+            statusDiv.textContent = 'Ready';
+            console.log('🎉 RSMT Viewer initialized successfully');
+            
+        } catch (error) {
+            console.error('❌ Error during initialization:', error);
+            updateLoadingStatus(`Error: ${error.message}`);
+        }
+    }
+
+    // Call initialization function when the window loads
+    window.onload = initializeRSMTViewer;
+
+    // Call initialization function when the window loads
+    window.onload = initializeRSMTViewer;
+
+    const loadingDiv = document.getElementById('loading');
         const loadingStatus = document.getElementById('loading-status');
         const statusDiv = document.getElementById('status');
         const container = document.getElementById('container');
@@ -898,6 +1033,11 @@
             renderer.outputColorSpace = THREE.SRGBColorSpace;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.2;
+
+            // Assertions for debugging uniform3fv error
+            console.assert(scene.background instanceof THREE.Color, 'scene.background is not a THREE.Color');
+            console.assert(camera.position instanceof THREE.Vector3, 'camera.position is not a THREE.Vector3');
+            console.assert(typeof renderer.toneMappingExposure === 'number', 'renderer.toneMappingExposure is not a number');
             
             // Add comprehensive error handling
             
@@ -942,6 +1082,8 @@
             
             const bgTexture = new THREE.CanvasTexture(canvas);
             scene.background = bgTexture;
+            // Ensure scene.background is a THREE.Color for compatibility with some shaders
+            scene.background = new THREE.Color(0x1a1a2e);
             
             // Professional anime character lighting setup
             
@@ -1300,59 +1442,39 @@
                     // Store VRM character reference globally for functions
                     window.vrmCharacter = vrmCharacter;
                     
+                    // Create VRM adapter for animation system
+                    console.log('🔗 Creating VRM adapter for animation system...');
+                    try {
+                        // Create VRM adapter to map BVH animations to VRM character
+                        characterSystem.vrmModel = vrmCharacter; // Set vrmModel to the loaded character
+                        characterSystem.vrmAdapter = new window.VRMBVHAdapter(vrmCharacter, skeletonGroup);
+                        
+                        // Set up idle animations
+                        characterSystem.vrmAdapter.setIdleAnimations({
+                            breathing: { enabled: true, amplitude: 0.015, frequency: 0.3 },
+                            blinking: { enabled: true, interval: 2500, duration: 120 },
+                            headMovement: { enabled: true, amplitude: 0.03, frequency: 0.08 },
+                            facialExpressions: { enabled: true, currentExpression: 'neutral' }
+                        });
+                        
+                        // Enable camera looking behavior
+                        if (camera) {
+                            characterSystem.vrmAdapter.lookAtCameraAsIfHuman(camera);
+                        }
+                        
+                        console.log('✅ VRM adapter created and configured for animations');
+                        
+                        // Store adapter globally for debugging
+                        window.currentVRMAdapter = characterSystem.vrmAdapter;
+                        
+                    } catch (adapterError) {
+                        console.error('❌ Failed to create VRM adapter:', adapterError);
+                    }
+                    
                     // Also store globally for debugging and lighting tests
                     window.vrmCharacter = vrmCharacter;
                     
-                    // Fix VRM shader compatibility issues after loading - AGGRESSIVE MODE
-                    if (vrmCharacter.vrm && vrmCharacter.vrm.scene) {
-                        console.log('🔧 Applying AGGRESSIVE VRM shader compatibility fixes...');
-                        vrmCharacter.vrm.scene.traverse((child) => {
-                            if (child.isMesh && child.material) {
-                                const materials = Array.isArray(child.material) ? child.material : [child.material];
-                                materials.forEach((mat, index) => {
-                                    // AGGRESSIVE: Replace ANY potentially problematic material
-                                    if (mat.isMToonMaterial || 
-                                        mat.type === 'ShaderMaterial' || 
-                                        mat.type === 'RawShaderMaterial' ||
-                                        (mat.uniforms && Object.keys(mat.uniforms).length > 0) ||
-                                        mat.vertexShader || 
-                                        mat.fragmentShader ||
-                                        mat.name.includes('MToon') ||
-                                        mat.name.includes('VRM') ||
-                                        mat.name.includes('Face_') ||
-                                        mat.name.includes('Body_') ||
-                                        mat.name.includes('Hair') ||
-                                        mat.name.includes('baked')) {
-                                        
-                                        console.log(`🔄 VRM: Replacing problematic material: ${mat.type} - ${mat.name}`);
-                                        
-                                        // Create bulletproof basic material
-                                        const newMaterial = new THREE.MeshBasicMaterial({
-                                            map: mat.map || null,
-                                            color: mat.color || new THREE.Color(0.8, 0.8, 0.8),
-                                            transparent: mat.transparent || false,
-                                            opacity: mat.opacity || 1.0,
-                                            side: mat.side || THREE.FrontSide,
-                                            name: `VRMFixed_${mat.name || 'Material'}_${index}`,
-                                            fog: false
-                                            // Note: MeshBasicMaterial doesn't use lights, so no 'lights' property needed
-                                        });
-                                        
-                                        if (Array.isArray(child.material)) {
-                                            child.material[index] = newMaterial;
-                                        } else {
-                                            child.material = newMaterial;
-                                        }
-                                    }
-                                });
-                                
-                                // Remove shadows to prevent render conflicts
-                                child.castShadow = false;
-                                child.receiveShadow = false;
-                            }
-                        });
-                        console.log('✅ AGGRESSIVE VRM shader compatibility fixes applied');
-                    }
+                    
                     
                     // Apply enhanced lighting specifically for the VRM character
                     if (typeof enhanceVRMLighting === 'function') {
@@ -1442,9 +1564,7 @@
             
             updateLoadingStatus('Starting animation...');
             
-            // FINAL AGGRESSIVE MATERIAL CLEANUP before animation starts
-            console.log('🧹 FINAL CLEANUP: Fixing all scene materials before animation...');
-            fixSceneMaterials();
+            
             
             // Animation styles with different parameters
             const animationStyles = {
@@ -1531,6 +1651,156 @@
             
             // Make intensity global
             window.jointIntensity = jointIntensity;
+            
+            // Global VRM shader fix function - defined early to be available during animation
+            window.fixVRMShaders = function() {
+                console.log('🔧 Attempting to fix VRM shader issues...');
+                
+                if (!scene) {
+                    console.log('❌ No scene available for shader fixes');
+                    return 'No scene available';
+                }
+                
+                let fixedCount = 0;
+                scene.traverse((object) => {
+                    if (object.isMesh && object.material) {
+                        const materials = Array.isArray(object.material) ? object.material : [object.material];
+                        
+                        materials.forEach((material, index) => {
+                            // Check for VRM materials or problematic uniforms
+                            if (material.type && (material.type.includes('VRM') || material.type.includes('MToon'))) {
+                                // Replace VRM materials with simple MeshLambertMaterial
+                                const newMaterial = new THREE.MeshLambertMaterial({
+                                    color: material.color || 0xFFFFFF,
+                                    map: material.map || null,
+                                    transparent: material.transparent || false,
+                                    opacity: material.opacity !== undefined ? material.opacity : 1.0
+                                });
+                                
+                                if (Array.isArray(object.material)) {
+                                    object.material[index] = newMaterial;
+                                } else {
+                                    object.material = newMaterial;
+                                }
+                                fixedCount++;
+                            }
+                            
+                            // Fix any uniforms with invalid Vector3 values
+                            if (material.uniforms) {
+                                Object.keys(material.uniforms).forEach(key => {
+                                    const uniform = material.uniforms[key];
+                                    if (uniform && uniform.value && uniform.value.isVector3) {
+                                        if (isNaN(uniform.value.x) || isNaN(uniform.value.y) || isNaN(uniform.value.z)) {
+                                            uniform.value.set(0, 0, 0);
+                                            fixedCount++;
+                                        }
+                                    }
+                                });
+                            }
+                            
+                            material.needsUpdate = true;
+                        });
+                        
+                        // Disable shadows for VRM objects
+                        object.castShadow = false;
+                        object.receiveShadow = false;
+                    }
+                });
+                
+                console.log(`✅ Fixed ${fixedCount} VRM materials/uniforms`);
+                return `Fixed ${fixedCount} VRM materials for better compatibility`;
+            };
+            
+            // Global emergency material fix function - more aggressive
+            window.emergencyMaterialFix = function() {
+                console.log('🚨 Emergency material fix - replacing ALL problematic materials...');
+                
+                if (!scene) {
+                    console.log('❌ No scene available');
+                    return 'No scene available';
+                }
+                
+                let replacedCount = 0;
+                scene.traverse((object) => {
+                    if (object.isMesh && object.material) {
+                        const materials = Array.isArray(object.material) ? object.material : [object.material];
+                        
+                        materials.forEach((material, index) => {
+                            // Replace ANY material that might have problematic shaders
+                            if (material.isShaderMaterial || 
+                                material.isRawShaderMaterial || 
+                                material.type.includes('VRM') || 
+                                material.type.includes('MToon') ||
+                                material.uniforms) {
+                                
+                                // Create a safe replacement material
+                                const newMaterial = new THREE.MeshBasicMaterial({
+                                    color: material.color || new THREE.Color(0xFFFFFF),
+                                    map: material.map || null,
+                                    transparent: material.transparent || false,
+                                    opacity: material.opacity !== undefined ? material.opacity : 1.0,
+                                    side: material.side || THREE.FrontSide
+                                });
+                                
+                                if (Array.isArray(object.material)) {
+                                    object.material[index] = newMaterial;
+                                } else {
+                                    object.material = newMaterial;
+                                }
+                                replacedCount++;
+                            }
+                        });
+                        
+                        // Ensure object is renderable
+                        object.castShadow = false;
+                        object.receiveShadow = false;
+                        object.frustumCulled = true;
+                    }
+                });
+                
+                console.log(`🚨 Emergency fix: Replaced ${replacedCount} problematic materials`);
+                return `Emergency fix applied to ${replacedCount} materials`;
+            };
+            
+            // Global material validation function
+            window.validateAndFixMaterial = function(material) {
+                if (!material) return null;
+                
+                // Ensure color is valid
+                if (material.color && !material.color.isColor) {
+                    if (typeof material.color === 'number') {
+                        material.color = new THREE.Color(material.color);
+                    } else if (typeof material.color === 'string') {
+                        material.color = new THREE.Color(material.color);
+                    } else {
+                        material.color = new THREE.Color(0xFFFFFF);
+                    }
+                }
+                
+                // Validate uniforms if present
+                if (material.uniforms) {
+                    Object.keys(material.uniforms).forEach(key => {
+                        const uniform = material.uniforms[key];
+                        if (uniform && uniform.value !== undefined) {
+                            // Check for Vector3 uniforms
+                            if (uniform.value && uniform.value.isVector3) {
+                                if (isNaN(uniform.value.x) || isNaN(uniform.value.y) || isNaN(uniform.value.z)) {
+                                    uniform.value.set(0, 0, 0);
+                                }
+                            }
+                            // Check for Color uniforms
+                            if (uniform.value && uniform.value.isColor) {
+                                if (isNaN(uniform.value.r) || isNaN(uniform.value.g) || isNaN(uniform.value.b)) {
+                                    uniform.value.setRGB(1, 1, 1);
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                material.needsUpdate = true;
+                return material;
+            };
             
             // REMOVED: Root constraint functions - using pure BVH with no constraints
             
@@ -1967,6 +2237,45 @@
                     
                     // Safe rendering with error handling
                     try {
+                        // Assertions for debugging uniform3fv error right before render
+                        console.assert(scene.background instanceof THREE.Color, 'scene.background is not a THREE.Color before render');
+                        console.assert(camera.position instanceof THREE.Vector3, 'camera.position is not a THREE.Vector3 before render');
+                        console.assert(typeof renderer.toneMappingExposure === 'number', 'renderer.toneMappingExposure is not a number before render');
+
+                        // Validate materials before rendering if we've had errors
+                        if (consecutiveErrors > 0) {
+                            scene.traverse((object) => {
+                                if (object.isMesh && object.material) {
+                                    if (Array.isArray(object.material)) {
+                                        object.material.forEach(mat => validateAndFixMaterial(mat));
+                                    } else {
+                                        window.validateAndFixMaterial(object.material);
+                                    }
+                                }
+                            });
+                        }
+                        
+                        // Final validation pass before rendering
+                        if (renderErrorCount > 0) {
+                            scene.traverse((object) => {
+                                if (object.isMesh && object.material) {
+                                    const materials = Array.isArray(object.material) ? object.material : [object.material];
+                                    materials.forEach(material => {
+                                        if (material.uniforms) {
+                                            Object.keys(material.uniforms).forEach(key => {
+                                                const uniform = material.uniforms[key];
+                                                if (uniform && uniform.value && uniform.value.isVector3) {
+                                                    if (isNaN(uniform.value.x) || isNaN(uniform.value.y) || isNaN(uniform.value.z)) {
+                                                        uniform.value.set(0, 0, 0);
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        
                         renderer.render(scene, camera);
                         consecutiveErrors = 0; // Reset on successful render
                         renderErrorCount = 0;
@@ -1992,20 +2301,41 @@
                         
                         // Try different fix strategies based on error count
                         if (consecutiveErrors < maxConsecutiveErrors) {
-                            if (consecutiveErrors <= 3 && !materialFixAttempted) {
-                                console.log('🔧 Attempting to fix scene materials...');
-                                fixSceneMaterials();
-                                materialFixAttempted = true; // Prevent repeated attempts
-                            } else if (consecutiveErrors <= 6) {
-                                console.log('🔧 Attempting to compile materials...');
-                                compileAllMaterials();
-                            } else {
-                                console.log('🔧 Running material diagnostics...');
-                                if (scene && typeof diagnoseMaterials === 'function') {
-                                    diagnoseMaterials();
-                                } else {
-                                    console.warn('⚠️ Scene or diagnoseMaterials function not available');
+                            if (consecutiveErrors === 1 && renderError.message.includes('uniform3fv')) {
+                                console.log('🔧 Attempting to fix VRM shader issues...');
+                                try {
+                                    if (typeof window.fixVRMShaders === 'function') {
+                                        window.fixVRMShaders();
+                                    } else if (typeof window.fixVRMShadersEarly === 'function') {
+                                        window.fixVRMShadersEarly();
+                                    } else {
+                                        console.warn('⚠️ No shader fix functions available');
+                                    }
+                                } catch (fixError) {
+                                    console.error('❌ Shader fix error:', fixError);
                                 }
+                                materialFixAttempted = true;
+                            } else if (consecutiveErrors === 1) {
+                                console.log('🔧 Attempting to fix all scene materials...');
+                                forceMaterialUpdateAndCompile();
+                                materialFixAttempted = true;
+                            } else if (consecutiveErrors <= 3 && !materialFixAttempted) {
+                                console.log('🔧 Attempting to re-initialize character system...');
+                                if (characterSystem) {
+                                    characterSystem.initializeTexturedSkeletonInClassroom('ichika');
+                                }
+                            } else if (consecutiveErrors === 4 || consecutiveErrors === 5) {
+                                console.log('🚨 Attempting emergency material fix...');
+                                if (typeof window.emergencyMaterialFix === 'function') {
+                                    window.emergencyMaterialFix();
+                                }
+                            } else if (consecutiveErrors <= 6) {
+                                console.log('🔧 Attempting to reset camera...');
+                                if (cameraController) {
+                                    cameraController.setCameraMode('front');
+                                }
+                            } else {
+                                console.log('⚠️ No further automatic fixes. Manual intervention may be required.');
                             }
                         } else {
                             console.error(`💥 Too many consecutive render errors (${consecutiveErrors}). HALTING ANIMATION.`);
@@ -2032,125 +2362,119 @@
                 }   
             }
             
+            // Global error notification function
+            function addErrorNotification() {
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background-color: #ff4444; color: white; padding: 10px 20px; border-radius: 5px; z-index: 1000; font-family: sans-serif;';
+                errorDiv.textContent = 'Animation Halted Due to Errors. Check Console.';
+                document.body.appendChild(errorDiv);
+                setTimeout(() => errorDiv.remove(), 5000);
+            }
+
             // Material fixing functions - ULTRA AGGRESSIVE MODE
-            function fixSceneMaterials() {
-                console.log('🔧 AGGRESSIVE: Replacing ALL VRM materials for compatibility...');
-                let fixedCount = 0;
-                
+            
+            
+            
+            
+            
+                    
+            
+            // Force material update and compilation for all objects in the scene
+            function forceMaterialUpdateAndCompile() {
+                console.log('🔄 Forcing material update and compilation for all scene objects...');
                 scene.traverse((object) => {
-                    if (object.material) {
-                        const materials = Array.isArray(object.material) ? object.material : [object.material];
-                        materials.forEach((mat, index) => {
-                            // AGGRESSIVE: Replace ANY material that might cause shader issues
-                            if (mat.isMToonMaterial || 
-                                mat.type === 'ShaderMaterial' || 
-                                mat.type === 'RawShaderMaterial' ||
-                                (mat.uniforms && Object.keys(mat.uniforms).length > 0) ||
-                                mat.vertexShader || 
-                                mat.fragmentShader ||
-                                mat.name.includes('MToon') ||
-                                mat.name.includes('VRM') ||
-                                mat.name.includes('Face_') ||
-                                mat.name.includes('Body_') ||
-                                mat.name.includes('Hair') ||
-                                mat.name.includes('baked')) {
-                                
-                                // Create super-simple material
-                                const newMaterial = new THREE.MeshBasicMaterial({
-                                    map: mat.map || null,
-                                    color: mat.color || new THREE.Color(0.8, 0.8, 0.8),
-                                    transparent: mat.transparent || false,
-                                    opacity: mat.opacity || 1.0,
-                                    side: mat.side || THREE.FrontSide,
-                                    name: `UltraFixed_${mat.name || 'Material'}_${index}`,
-                                    fog: false
-                                    // Note: MeshBasicMaterial doesn't use lights, so no 'lights' property needed
-                                });
-                                
-                                if (Array.isArray(object.material)) {
-                                    object.material[index] = newMaterial;
-                                } else {
-                                    object.material = newMaterial;
-                                }
-                                fixedCount++;
-                                console.log(`🔄 Replaced material: ${mat.type} -> MeshBasicMaterial`);
-                            } else {
-                                // Even for safe materials, ensure no problematic properties
-                                if (mat.uniforms) {
-                                    delete mat.uniforms; // Remove all uniforms
-                                }
-                                
-                                // Remove all shader-related properties
-                                delete mat.vertexShader;
-                                delete mat.fragmentShader;
-                                delete mat.defines;
-                                
-                                // Disable problematic features
-                                mat.castShadow = false;
-                                mat.receiveShadow = false;
-                                mat.fog = false;
-                                
-                                // Force material update
-                                mat.needsUpdate = true;
-                            }
-                        });
+                    if (object.isMesh) {
+                        if (Array.isArray(object.material)) {
+                            object.material.forEach(mat => {
+                                validateAndFixMaterial(mat);
+                                updateMaterialTextures(mat);
+                            });
+                        } else if (object.material && object.material.isMaterial) {
+                            validateAndFixMaterial(object.material);
+                            updateMaterialTextures(object.material);
+                        }
                     }
                 });
+                try {
+                    renderer.compile(scene, camera);
+                    console.log('✅ Scene materials compiled successfully.');
+                } catch (e) {
+                    console.warn('⚠️ Failed to compile scene materials:', e.message);
+                }
+            }
+            
+            // Validate and fix material to prevent shader errors
+            function validateAndFixMaterial(material) {
+                if (!material || !material.isMaterial) return;
                 
-                console.log(`✅ ULTRA-FIXED ${fixedCount} materials - converted to MeshBasicMaterial`);
-                return fixedCount > 0;
-            }
-            
-            // Get default values for common uniforms
-            function getDefaultUniformValue(uniformName) {
-                const defaults = {
-                    'resolution': new THREE.Vector2(window.innerWidth, window.innerHeight),
-                    'cameraPosition': camera.position.clone(),
-                    'modelMatrix': new THREE.Matrix4(),
-                    'viewMatrix': camera.matrixWorldInverse.clone(),
-                    'projectionMatrix': camera.projectionMatrix.clone(),
-                    'normalMatrix': new THREE.Matrix3(),
-                    'color': new THREE.Color(1, 1, 1),
-                    'emissive': new THREE.Color(0, 0, 0),
-                    'specular': new THREE.Color(1, 1, 1),
-                    'shininess': 30,
-                    'map': null,
-                    'normalMap': null,
-                    'roughnessMap': null,
-                    'metalnessMap': null
-                };
+                // Fix color properties
+                if (material.color && !material.color.isColor) {
+                    if (typeof material.color === 'number') {
+                        material.color = new THREE.Color(material.color);
+                    } else {
+                        material.color = new THREE.Color(0xFFFFFF);
+                    }
+                }
                 
-                return defaults[uniformName] || 0.0;
+                // Fix emissive properties
+                if (material.emissive && !material.emissive.isColor) {
+                    if (typeof material.emissive === 'number') {
+                        material.emissive = new THREE.Color(material.emissive);
+                    } else {
+                        material.emissive = new THREE.Color(0x000000);
+                    }
+                }
+                
+                // Fix uniforms if present (for shader materials)
+                if (material.uniforms) {
+                    Object.keys(material.uniforms).forEach(key => {
+                        const uniform = material.uniforms[key];
+                        if (uniform && uniform.value !== undefined) {
+                            // Fix Vector3 uniforms
+                            if (uniform.value && uniform.value.isVector3) {
+                                if (isNaN(uniform.value.x) || isNaN(uniform.value.y) || isNaN(uniform.value.z)) {
+                                    uniform.value.set(0, 0, 0);
+                                }
+                            }
+                            // Fix Color uniforms
+                            else if (uniform.value && uniform.value.isColor) {
+                                if (isNaN(uniform.value.r) || isNaN(uniform.value.g) || isNaN(uniform.value.b)) {
+                                    uniform.value.setRGB(1, 1, 1);
+                                }
+                            }
+                            // Fix array uniforms
+                            else if (Array.isArray(uniform.value)) {
+                                uniform.value = uniform.value.map(val => {
+                                    if (typeof val === 'number' && isNaN(val)) return 0;
+                                    return val;
+                                });
+                            }
+                            // Fix scalar uniforms
+                            else if (typeof uniform.value === 'number' && isNaN(uniform.value)) {
+                                uniform.value = 0;
+                            }
+                        }
+                    });
+                }
+                
+                material.needsUpdate = true;
             }
             
-            // Add error notification for user
-            function addErrorNotification() {
-                const notification = document.createElement('div');
-                notification.id = 'error-notification';
-                notification.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    background: #ff4444;
-                    color: white;
-                    padding: 15px;
-                    border-radius: 5px;
-                    z-index: 10000;
-                    max-width: 350px;
-                    font-family: monospace;
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-                `;
-                notification.innerHTML = `
-                    <strong>⚠️ Animation Halted</strong><br>
-                    Persistent rendering errors detected.<br>
-                    Last error: <code>${lastErrorMessage.substring(0, 50)}...</code><br>
-                    <button onclick="location.reload()" style="margin-top: 10px; padding: 5px 10px; background: white; color: #ff4444; border: none; border-radius: 3px; cursor: pointer;">
-                        Reload Page
-                    </button>
-                `;
-                document.body.appendChild(notification);
+            // Update material textures
+            function updateMaterialTextures(mat) {
+                if (mat.isMaterial) {
+                    if (mat.map) mat.map.needsUpdate = true;
+                    if (mat.emissiveMap) mat.emissiveMap.needsUpdate = true;
+                    if (mat.normalMap) mat.normalMap.needsUpdate = true;
+                    if (mat.roughnessMap) mat.roughnessMap.needsUpdate = true;
+                    if (mat.metalnessMap) mat.metalnessMap.needsUpdate = true;
+                    if (mat.aoMap) mat.aoMap.needsUpdate = true;
+                    if (mat.lightMap) mat.lightMap.needsUpdate = true;
+                    if (mat.alphaMap) mat.alphaMap.needsUpdate = true;
+                    if (mat.envMap) mat.envMap.needsUpdate = true;
+                }
             }
-            
+
             // Force material compilation for the scene
             function compileAllMaterials() {
                 console.log('🔄 Compiling all scene materials...');
@@ -2158,7 +2482,7 @@
                     renderer.compile(scene, camera);
                     console.log('✅ Material compilation complete');
                 } catch (e) {
-                    console.warn('⚠️ Material compilation failed:', e.message);
+                    console.warn('Material compilation failed:', e.message);
                     // Try alternative approach
                     scene.traverse((object) => {
                         if (object.material) {
@@ -2169,16 +2493,14 @@
                                     object.material.needsUpdate = true;
                                 }
                             } catch (err) {
-                                console.warn('⚠️ Failed to update material:', err.message);
+                                console.warn('Failed to update material:', err.message);
                             }
                         }
                     });
                 }
             }
             
-            // Make material fixing functions globally accessible
-            window.fixSceneMaterials = fixSceneMaterials;
-            window.compileAllMaterials = compileAllMaterials;
+            
             
             // Replace the original animate function with enhanced version
             if (typeof animate !== 'undefined') {
@@ -3105,6 +3427,68 @@
                     console.log('⚠️ No VRM character loaded');
                     return 'No character to focus on';
                 }
+            };
+            
+            // Fix VRM shader errors specifically
+            window.fixVRMShaders = function() {
+                let fixedCount = 0;
+                console.log('🔧 Fixing VRM shader issues...');
+                
+                scene.traverse((object) => {
+                    if (object.isMesh && object.material) {
+                        const materials = Array.isArray(object.material) ? object.material : [object.material];
+                        
+                        materials.forEach(material => {
+                            // Check for VRM materials or problematic uniforms
+                            if (material.type && (material.type.includes('VRM') || material.type.includes('MToon'))) {
+                                // Replace VRM materials with simple MeshLambertMaterial
+                                const newMaterial = new THREE.MeshLambertMaterial({
+                                    color: material.color || 0xFFFFFF,
+                                    map: material.map || null,
+                                    transparent: material.transparent || false,
+                                    opacity: material.opacity !== undefined ? material.opacity : 1.0,
+                                    emissive: material.emissive || 0x000000,
+                                });
+                                
+                                if (Array.isArray(object.material)) {
+                                    const index = object.material.indexOf(material);
+                                    object.material[index] = newMaterial;
+                                } else {
+                                    object.material = newMaterial;
+                                }
+                                fixedCount++;
+                                console.log(`🔧 Replaced VRM material on ${object.name || 'unnamed object'}`);
+                            }
+                            
+                            // Fix any problematic uniforms
+                            if (material.uniforms) {
+                                Object.keys(material.uniforms).forEach(key => {
+                                    const uniform = material.uniforms[key];
+                                    if (uniform && uniform.value !== undefined) {
+                                        // Fix Vector3 uniforms causing uniform3fv errors
+                                        if (uniform.value && uniform.value.isVector3) {
+                                            if (isNaN(uniform.value.x) || isNaN(uniform.value.y) || isNaN(uniform.value.z)) {
+                                                uniform.value.set(0, 0, 0);
+                                                fixedCount++;
+                                                console.log(`🔧 Fixed Vector3 uniform: ${key}`);
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                // Force material compilation
+                try {
+                    renderer.compile(scene, camera);
+                    console.log(`✅ Fixed ${fixedCount} shader issues and recompiled scene`);
+                } catch (e) {
+                    console.warn('⚠️ Scene compilation failed after fixes:', e.message);
+                }
+                
+                return `Fixed ${fixedCount} shader issues`;
             };
             
             // Function to set optimal character view

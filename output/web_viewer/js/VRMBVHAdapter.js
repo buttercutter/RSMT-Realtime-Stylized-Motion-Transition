@@ -90,7 +90,7 @@ class VRMBVHAdapter {
         // Breathing animation
         if (this.idleAnimations.breathing.enabled) {
             const breathingOffset = Math.sin(time * this.idleAnimations.breathing.frequency) * this.idleAnimations.breathing.amplitude;
-            const chestBone = this.vrmModel.humanoid.getBoneNode('chest');
+            const chestBone = this.vrmModel.humanoid.getNormalizedBoneNode('chest');
             if (chestBone) {
                 chestBone.rotation.x += breathingOffset * 0.1;
             }
@@ -108,7 +108,7 @@ class VRMBVHAdapter {
         // Subtle head movement
         if (this.idleAnimations.headMovement.enabled) {
             const headOffset = Math.sin(time * this.idleAnimations.headMovement.frequency) * this.idleAnimations.headMovement.amplitude;
-            const headBone = this.vrmModel.humanoid.getBoneNode('head');
+            const headBone = this.vrmModel.humanoid.getRawBoneNode('head');
             if (headBone) {
                 headBone.rotation.y += headOffset * 0.1;
             }
@@ -136,7 +136,7 @@ class VRMBVHAdapter {
     updateCameraLook() {
         if (!this.camera || !this.vrmModel) return;
         
-        const headBone = this.vrmModel.humanoid.getBoneNode('head');
+        const headBone = this.vrmModel.humanoid.getRawBoneNode('head');
         if (headBone) {
             // Calculate direction to camera
             const cameraPos = this.camera.position.clone();
@@ -195,8 +195,7 @@ class VRMBVHAdapter {
             // Left leg chain from rsmt_showcase_modern.html (mirrored)
             'LeftHip': 'leftUpperLeg',
             'LeftKnee': 'leftLowerLeg',
-            'LeftAnkle': 'leftFoot',
-            'LeftToe': 'leftToes'
+            'LeftAnkle': 'leftFoot'
         };
     }
 
@@ -244,78 +243,73 @@ class VRMBVHAdapter {
             if (this.debugMode) console.warn('⚠️ Invalid frame data for VRMBVHAdapter');
             return false;
         }
-                // Apply root position
-                this.vrmScene.position.set(rootX, rootY, rootZ);
-            // Apply root position (first 3 values)
-            // Use getNormalizedBoneNode for hips
-            if (this.vrmModel.humanoid?.getNormalizedBoneNode('hips')) {
-                const hipsNode = this.vrmModel.humanoid.getNormalizedBoneNode('hips');
-                const rootX = frameData[0] * 0.01; // Scale to match VRM
-                const rootY = frameData[1] * 0.01;
-                const rootZ = frameData[2] * 0.01;
-                
-                // Apply root position to the VRM scene directly
-                this.vrmModel.scene.position.set(rootX, rootY, rootZ);
+        
+        // Apply root position (first 3 values)
+        const rootX = frameData[0] * 0.01; // Scale to match VRM
+        const rootY = frameData[1] * 0.01;
+        const rootZ = frameData[2] * 0.01;
+        
+        // Apply root position to the VRM scene directly
+        this.vrmModel.scene.position.set(rootX, rootY, rootZ);
 
-            // Apply root rotation to the VRM scene directly
-            this.vrmScene.rotation.order = 'YXZ'; // Ensure correct order
-            this.vrmScene.rotation.set(rootRotX, rootRotY, rootRotZ);
-            }
-            
-            // Apply root rotation (next 3 values)
-            const rootRotY = (frameData[3] || 0) * Math.PI / 180;
-            const rootRotX = (frameData[4] || 0) * Math.PI / 180;
-            const rootRotZ = (frameData[5] || 0) * Math.PI / 180;
-            
-            // Apply root rotation to the VRM scene directly
-            this.vrmModel.scene.rotation.order = 'YXZ'; // Ensure correct order
-            this.vrmModel.scene.rotation.set(rootRotX, rootRotY, rootRotZ);
+        // Apply root rotation (next 3 values)
+        const rootRotY = (frameData[3] || 0) * Math.PI / 180;
+        const rootRotX = (frameData[4] || 0) * Math.PI / 180;
+        const rootRotZ = (frameData[5] || 0) * Math.PI / 180;
+        
+        // Apply root rotation to the VRM scene directly
+        this.vrmModel.scene.rotation.order = 'YXZ'; // Ensure correct order
+        this.vrmModel.scene.rotation.set(rootRotX, rootRotY, rootRotZ);
 
-            if (this.debugMode) {
-                console.log(`VRM Root Rot: X=${(rootRotX*180/Math.PI).toFixed(1)}, Y=${(rootRotY*180/Math.PI).toFixed(1)}, Z=${(rootRotZ*180/Math.PI).toFixed(1)}`);
-            }
-
-            // Start from index 6 for joint rotations
-            let channelIndex = 6;
-            
-            // Apply rotations to each mapped bone
-            for (const [bvhJoint, vrmBone] of Object.entries(this.boneMapping)) {
-                const boneData = this.availableBones[bvhJoint];
-                if (!boneData || !boneData.bone) continue; // Skip if bone not available
-                
-                const boneNode = boneData.bone;
-                
-                // Check if we have enough data for this joint
-                if (channelIndex + 3 >= frameData.length) {
-                    console.warn(`⚠️ Not enough data for ${bvhJoint} (${vrmBone})`);
-                    continue;
-                }
-                
-                // Apply rotation
-                const rotX = (frameData[channelIndex] || 0) * Math.PI / 180;
-                const rotY = (frameData[channelIndex + 1] || 0) * Math.PI / 180;
-                const rotZ = (frameData[channelIndex + 2] || 0) * Math.PI / 180;
-                
-                boneNode.rotation.set(rotX, rotY, rotZ);
-                
-                if (this.debugMode) {
-                    console.log(`VRM Bone ${vrmBone} (${bvhJoint}): X=${(rotX*180/Math.PI).toFixed(1)}, Y=${(rotY*180/Math.PI).toFixed(1)}, Z=${(rotZ*180/Math.PI).toFixed(1)}`);
-                }
-                
-                channelIndex += 3; // Move to the next joint rotation
-            }            
-            // Update VRM humanoid system
-            if (this.vrmModel.humanoid?.update) {
-                this.vrmModel.humanoid.update();
-            }
-            
-            return true;
-            
-        } catch (error) {
-            console.error('❌ Error applying BVH frame to VRM:', error);
-            return false;
+        if (this.debugMode) {
+            console.log(`VRM Root Pos: X=${rootX.toFixed(2)}, Y=${rootY.toFixed(2)}, Z=${rootZ.toFixed(2)}`);
+            console.log(`VRM Root Rot: X=${(rootRotX*180/Math.PI).toFixed(1)}, Y=${(rootRotY*180/Math.PI).toFixed(1)}, Z=${(rootRotZ*180/Math.PI).toFixed(1)}`);
         }
+
+        // Start from index 6 for joint rotations
+        let channelIndex = 6;
+        
+        // Apply rotations to each mapped bone
+        for (const [bvhJoint, vrmBone] of Object.entries(this.boneMapping)) {
+            const boneData = this.availableBones[bvhJoint];
+            if (!boneData || !boneData.bone) continue; // Skip if bone not available
+            
+            const boneNode = boneData.bone;
+            
+            // Ensure bone rotation order is consistent with BVH
+            boneNode.rotation.order = 'YXZ'; 
+
+            // Check if we have enough data for this joint
+            if (channelIndex + 3 > frameData.length) { // Changed to > to catch exact match for last joint
+                console.warn(`⚠️ Not enough data for ${bvhJoint} (${vrmBone}). Expected 3 channels, got ${frameData.length - channelIndex}`);
+                break; // Stop processing if not enough data for remaining joints
+            }
+            
+            // Apply rotation
+            const rotX = (frameData[channelIndex] || 0) * Math.PI / 180;
+            const rotY = (frameData[channelIndex + 1] || 0) * Math.PI / 180;
+            const rotZ = (frameData[channelIndex + 2] || 0) * Math.PI / 180;
+            
+            boneNode.rotation.set(rotX, rotY, rotZ);
+            
+            if (this.debugMode) {
+                console.log(`VRM Bone ${vrmBone} (${bvhJoint}): X=${(rotX*180/Math.PI).toFixed(1)}, Y=${(rotY*180/Math.PI).toFixed(1)}, Z=${(rotZ*180/Math.PI).toFixed(1)}`);
+            }
+            
+            channelIndex += 3; // Move to the next joint rotation
+        }            
+        // Update VRM humanoid system
+        if (this.vrmModel.humanoid?.update) {
+            this.vrmModel.humanoid.update();
+        }
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Error applying BVH frame to VRM:', error);
+        return false;
     }
+}
 
 
     // Export for use in other modules

@@ -363,38 +363,24 @@ class EnhancedCharacterSystem {
             return;
         }
         
-        // Check different possible skeleton structures for bones
-        let bones = null;
-        if (this.bvhSkeleton.bones && Array.isArray(this.bvhSkeleton.bones)) {
-            bones = this.bvhSkeleton.bones;
-        } else if (this.bvhSkeleton.children && Array.isArray(this.bvhSkeleton.children)) {
-            bones = this.bvhSkeleton.children;
-        } else {
-            // Try to find bones by traversing
-            const foundBones = [];
-            this.bvhSkeleton.traverse((child) => {
-                if (child.isBone || child.type === 'Bone' || child.name.includes('bone') || child.name.includes('Bone')) {
-                    foundBones.push(child);
-                }
-            });
-            bones = foundBones;
-        }
-        
-        if (!bones || bones.length === 0) {
-            console.warn('No bones found in skeleton for positioning');
-            console.log('Skeleton structure:', this.bvhSkeleton);
-            return;
-        }
-        
-        // Position the skeleton in the center of the classroom walking area
-        const hipsBone = bones.find(bone => bone.name === 'Hips' || bone.name === 'hips' || bone.name.toLowerCase().includes('hip'));
-        if (hipsBone) {
-            hipsBone.position.set(0, 0, 0); // Center of classroom
-            console.log('📍 Skeleton positioned in classroom');
-        } else {
-            // If no hips bone found, position the whole skeleton
+        // Collect all objects in the hierarchy and log their names for debugging
+        let hipsBone = null;
+        this.bvhSkeleton.traverse((child) => {
+            if (this.debugMode) {
+                console.log(`Traversing: ${child.name || child.uuid} (type: ${child.type})`);
+            }
+            if (!hipsBone && (child.name === 'Hips' || child.name === 'hips' || (child.userData && (child.userData.name === 'Hips' || child.userData.name === 'hips')) || child.name.toLowerCase().includes('hip'))) {
+                hipsBone = child;
+            }
+        });
+
+        if (!hipsBone) {
+            console.warn('No hips bone found in skeleton for positioning. Positioning the entire skeleton.');
             this.bvhSkeleton.position.set(0, 0, 0);
             console.log('📍 Skeleton positioned in classroom (whole skeleton)');
+        } else {
+            hipsBone.position.set(0, 0, 0); // Center of classroom
+            console.log('📍 Skeleton positioned in classroom');
         }
     }
 
