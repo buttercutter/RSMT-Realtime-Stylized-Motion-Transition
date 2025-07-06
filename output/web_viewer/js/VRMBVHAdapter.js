@@ -1,6 +1,7 @@
 /**
  * VRM BVH Adapter - Maps BVH skeleton data to VRM character bones
  * Integrates anime characters with existing BVH motion capture system
+ * Enhanced with idle animations and facial expressions
  */
 
 class VRMBVHAdapter {
@@ -11,12 +12,145 @@ class VRMBVHAdapter {
         this.initialized = false;
         this.debugMode = true; // Set to true for debugging
         
-        console.log('🎭 VRMBVHAdapter initialized');
+        // Idle animation system
+        this.idleAnimations = {
+            breathing: { enabled: true, amplitude: 0.01, frequency: 0.3, phase: 0 },
+            blinking: { enabled: true, interval: 3000, lastBlink: 0, duration: 150 },
+            headMovement: { enabled: true, amplitude: 0.05, frequency: 0.1, phase: 0 },
+            facialExpressions: { enabled: true, currentExpression: 'neutral', duration: 0 }
+        };
+        
+        // Camera interaction
+        this.lookAtCamera = false;
+        this.currentTime = 0;
+        
+        console.log('🎭 Enhanced VRMBVHAdapter initialized with idle animations');
         console.log('VRM Model:', vrmModel);
         console.log('BVH Skeleton:', bvhSkeleton);
         if (this.debugMode) {
             console.log('Initial bone mapping:', this.boneMapping);
         }
+    }
+
+    // Enable idle animations like the chat implementation
+    setIdleAnimations(config) {
+        console.log('🎭 Setting idle animations:', config);
+        
+        Object.assign(this.idleAnimations, config);
+        
+        // Start breathing animation
+        if (this.idleAnimations.breathing.enabled) {
+            this.startBreathingAnimation();
+        }
+        
+        // Start blinking animation
+        if (this.idleAnimations.blinking.enabled) {
+            this.startBlinkingAnimation();
+        }
+        
+        console.log('✅ Idle animations configured');
+    }
+
+    // Look at camera like a human (from chat implementation)
+    lookAtCameraAsIfHuman(camera) {
+        this.lookAtCamera = true;
+        this.camera = camera;
+        console.log('👁️ VRM character will look at camera');
+    }
+
+    // Tick function for animations (like chat implementation)
+    tick(deltaTime) {
+        this.currentTime += deltaTime;
+        
+        if (this.vrmModel) {
+            // Update idle animations
+            this.updateIdleAnimations(deltaTime);
+            
+            // Update camera looking
+            if (this.lookAtCamera && this.camera) {
+                this.updateCameraLook();
+            }
+            
+            // Update VRM internal systems
+            this.vrmModel.update(deltaTime);
+        }
+    }
+
+    updateIdleAnimations(deltaTime) {
+        if (!this.vrmModel || !this.vrmModel.humanoid) return;
+        
+        const time = this.currentTime;
+        
+        // Breathing animation
+        if (this.idleAnimations.breathing.enabled) {
+            const breathingOffset = Math.sin(time * this.idleAnimations.breathing.frequency) * this.idleAnimations.breathing.amplitude;
+            const chestBone = this.vrmModel.humanoid.getBoneNode('chest');
+            if (chestBone) {
+                chestBone.rotation.x += breathingOffset * 0.1;
+            }
+        }
+        
+        // Blinking animation
+        if (this.idleAnimations.blinking.enabled) {
+            const timeSinceLastBlink = time - this.idleAnimations.blinking.lastBlink;
+            if (timeSinceLastBlink > this.idleAnimations.blinking.interval) {
+                this.triggerBlink();
+                this.idleAnimations.blinking.lastBlink = time;
+            }
+        }
+        
+        // Subtle head movement
+        if (this.idleAnimations.headMovement.enabled) {
+            const headOffset = Math.sin(time * this.idleAnimations.headMovement.frequency) * this.idleAnimations.headMovement.amplitude;
+            const headBone = this.vrmModel.humanoid.getBoneNode('head');
+            if (headBone) {
+                headBone.rotation.y += headOffset * 0.1;
+            }
+        }
+    }
+
+    triggerBlink() {
+        if (this.vrmModel && this.vrmModel.expressionManager) {
+            // Trigger blink expression
+            const expressions = this.vrmModel.expressionManager;
+            if (expressions.getExpressionValue) {
+                // Quick blink animation
+                setTimeout(() => {
+                    if (expressions.setValue) {
+                        expressions.setValue('blink', 1.0);
+                        setTimeout(() => {
+                            expressions.setValue('blink', 0.0);
+                        }, this.idleAnimations.blinking.duration);
+                    }
+                }, 10);
+            }
+        }
+    }
+
+    updateCameraLook() {
+        if (!this.camera || !this.vrmModel) return;
+        
+        const headBone = this.vrmModel.humanoid.getBoneNode('head');
+        if (headBone) {
+            // Calculate direction to camera
+            const cameraPos = this.camera.position.clone();
+            const headPos = headBone.getWorldPosition(new (window.THREE?.Vector3 || Vector3)());
+            const direction = cameraPos.sub(headPos).normalize();
+            
+            // Apply subtle head rotation toward camera
+            const lookIntensity = 0.3; // Subtle looking
+            headBone.lookAt(headPos.add(direction.multiplyScalar(lookIntensity)));
+        }
+    }
+
+    startBreathingAnimation() {
+        console.log('🫁 Starting breathing animation');
+        // Breathing is handled in tick function
+    }
+
+    startBlinkingAnimation() {
+        console.log('👁️ Starting blinking animation');
+        // Blinking is handled in tick function
     }
 
     createBoneMapping() {

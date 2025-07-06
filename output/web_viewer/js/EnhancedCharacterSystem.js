@@ -73,6 +73,19 @@ class EnhancedCharacterSystem {
             this.vrmAdapter = new VRMBVHAdapter(this.vrmModel, this.bvhSkeleton);
             if (this.debugMode) console.log('  VRMBVHAdapter initialized:', this.vrmAdapter);
             
+            // Set up idle animations like in the chat implementation
+            this.vrmAdapter.setIdleAnimations({
+                breathing: { enabled: true, amplitude: 0.015, frequency: 0.3 },
+                blinking: { enabled: true, interval: 2500, duration: 120 },
+                headMovement: { enabled: true, amplitude: 0.03, frequency: 0.08 },
+                facialExpressions: { enabled: true, currentExpression: 'neutral' }
+            });
+            
+            // Enable camera looking behavior
+            if (this.scene.getObjectByName && this.scene.getObjectByName('camera')) {
+                this.vrmAdapter.lookAtCameraAsIfHuman(this.scene.getObjectByName('camera'));
+            }
+            
             // Scale and position VRM to match BVH skeleton
             this.vrmModel.scene.scale.setScalar(0.01); // Adjust scale as needed
             this.vrmModel.scene.position.set(0, 0, 0);

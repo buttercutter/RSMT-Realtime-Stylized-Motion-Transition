@@ -255,7 +255,7 @@
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <button onclick="checkONNXRuntimeSetup()" style="padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">🔍 Check ONNX Setup</button>
                     <button onclick="toggleAIMode()" id="ai-mode-btn" style="padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">🎬 BVH Mode: ON</button>
-                    <button onclick="randomizeStyle()" style="padding: 8px 16px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer;">🎨 Random Style</button>
+                    <button onclick="randomizeStyle()" style="padding: 8px 16px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer;">✨ Random Style</button>
                     <button onclick="smoothStyle()" style="padding: 8px 16px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;">✨ Smooth Style</button>
                     <button onclick="aggressiveStyle()" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">🔥 Aggressive Style</button>
                     <button onclick="analyzeCurrentMotion()" style="padding: 8px 16px; background: #607D8B; color: white; border: none; border-radius: 4px; cursor: pointer;">🔍 Analyze Motion</button>
@@ -298,6 +298,12 @@
                     
                     <button onclick="focusOnFace()" style="padding: 8px 16px; background: #06b6d4; color: white; border: none; border-radius: 4px; cursor: pointer;">👤 Focus Face</button>
                     <button onclick="toggleFacialExpressions()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">😊 Toggle Expressions</button>
+                    <button onclick="fixVRMShaders()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 Fix VRM Shaders</button>
+                    <button onclick="testLighting()" style="padding: 8px 16px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;">💡 Test Lighting</button>
+                    <button onclick="fixSceneMaterials()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 Fix Materials</button>
+                    <button onclick="compileAllMaterials()" style="padding: 8px 16px; background: #7c3aed; color: white; border: none; border-radius: 4px; cursor: pointer;">⚙️ Compile Materials</button>
+                    <button onclick="diagnoseMaterials()" style="padding: 8px 16px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer;">🔍 Diagnose Materials</button>
+                    <button onclick="toggleShadows()" style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer;">🌑 Toggle Shadows</button>
                 </div>
             </div>
 
@@ -367,7 +373,7 @@
                     <button onclick="resetAnimation()" style="padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">Reset</button>
                     <button onclick="debugFrame()" style="padding: 8px 16px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer;">Debug Frame</button>
                     <button onclick="fixOrientation()" style="padding: 8px 16px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;" title="DISABLED - Using pure BVH data">Fix Orientation (DISABLED)</button>
-                    <button onclick="flipDirection()" style="padding: 8px 16px; background: #E91E63; color: white; border: none; border-radius: 4px; cursor: pointer;" title="DISABLED - Using pure BVH data">Flip Direction (DISABLED)</button>
+                    <button onclick="flipDirection()" style="padding: 8px 16px; background: #E91E63; color: none; border: none; border-radius: 4px; cursor: pointer;" title="DISABLED - Using pure BVH data">Flip Direction (DISABLED)</button>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <label style="color: #fff;">Joint Intensity:</label>
                         <input type="range" id="intensity-slider" min="0.01" max="1.0" step="0.01" value="0.1" style="width: 100px;" onchange="updateJointIntensity(this.value)">
@@ -390,13 +396,25 @@
     <script src="./js/VRMBVHAdapter.js"></script>
     <script src="./js/FacialExpressionSystem.js"></script>
     <script src="./js/AnimationBlender.js"></script>
-    <script src="./js/ClassroomCameraController.js"></script>
     <script src="./js/VRMMaterialExtractor.js"></script>
     <script src="./js/ClassroomEnvironment.js"></script>
     <script src="./js/EnhancedCharacterSystem.js"></script>
+    <script src="./js/ClassroomCameraController.js"></script>
+    <script src="./js/AdvancedVRMLoader.js"></script>
+
 
     <script type="module">
         console.log('🚀 Starting Modern RSMT Viewer with ES Modules...');
+        
+        // Test module availability
+        console.log('📋 Module Availability Check:');
+        const modules = ['VRMBVHAdapter', 'FacialExpressionSystem', 'AnimationBlender', 
+                        'VRMMaterialExtractor', 'ClassroomEnvironment', 'EnhancedCharacterSystem', 
+                        'ClassroomCameraController'];
+        modules.forEach(name => {
+            const available = typeof window[name] !== 'undefined';
+            console.log(`${available ? '✅' : '❌'} ${name}: ${available ? 'Available' : 'Not Found'}`);
+        });
         
         const loadingDiv = document.getElementById('loading');
         const loadingStatus = document.getElementById('loading-status');
@@ -1086,31 +1104,81 @@
             renderer.domElement.style.left = '0';
             renderer.domElement.style.zIndex = '1';
             
-            updateLoadingStatus('Setting up enhanced lighting and environment...');
+            updateLoadingStatus('Setting up professional lighting and environment...');
             
-            // Enhanced lighting setup like legacy version
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+            // Professional lighting setup for anime character rendering
+            scene.background = new THREE.Color(0x87CEEB); // Sky blue background
+            
+            // High-intensity ambient light for anime-style illumination  
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
             scene.add(ambientLight);
             
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-            directionalLight.position.set(10, 10, 5);
-            directionalLight.castShadow = true;
-            scene.add(directionalLight);
+            // Main key light (strong directional light from front-top)
+            const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
+            keyLight.position.set(2, 4, 3);
+            keyLight.castShadow = false; // Disabled for VRM compatibility
+            scene.add(keyLight);
             
-            // Add additional lighting for better visibility
-            const pointLight1 = new THREE.PointLight(0x4444ff, 0.5, 100);
-            pointLight1.position.set(-5, 5, 5);
-            scene.add(pointLight1);
+            // Fill light from left (softer, warmer)
+            const fillLight = new THREE.DirectionalLight(0xffddaa, 1.5);
+            fillLight.position.set(-3, 3, 2);
+            scene.add(fillLight);
             
-            const pointLight2 = new THREE.PointLight(0xff4444, 0.5, 100);
-            pointLight2.position.set(5, 5, -5);
-            scene.add(pointLight2);
+            // Back/rim light for character outline
+            const rimLight = new THREE.DirectionalLight(0xaaccff, 1.0);
+            rimLight.position.set(0, 3, -4);
+            scene.add(rimLight);
             
-            // Add grid floor and axes helpers like legacy version
-            const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+            // Additional character illumination
+            const characterLight1 = new THREE.PointLight(0xffffff, 1.5, 10);
+            characterLight1.position.set(1, 2, 2);
+            scene.add(characterLight1);
+            
+            const characterLight2 = new THREE.PointLight(0xffaaaa, 1.0, 8);
+            characterLight2.position.set(-1, 1.5, 1);
+            scene.add(characterLight2);
+            
+            // Soft environmental lighting
+            const envLight1 = new THREE.PointLight(0xaaffff, 0.8, 15);
+            envLight1.position.set(3, 4, -2);
+            scene.add(envLight1);
+            
+            const envLight2 = new THREE.PointLight(0xffffaa, 0.8, 15);
+            envLight2.position.set(-3, 4, -2);
+            scene.add(envLight2);
+            
+            // Configure renderer for VRM compatibility (disable shadows to prevent shader errors)
+            renderer.shadowMap.enabled = false; // Disabled for VRM compatibility 
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            
+            // Configure for VRM compatibility
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.gammaFactor = 2.2;
+            
+            // Ground plane with better material
+            const groundGeometry = new THREE.PlaneGeometry(30, 30);
+            const groundMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0xffffff,
+                transparent: false,
+                opacity: 1.0
+            });
+            const groundPlane = new THREE.Mesh(groundGeometry, groundMaterial);
+            groundPlane.rotation.x = -Math.PI / 2;
+            groundPlane.position.y = -0.01;
+            groundPlane.receiveShadow = false; // Disabled for VRM compatibility
+            scene.add(groundPlane);
+            
+            // Subtle grid (less prominent)
+            const gridHelper = new THREE.GridHelper(20, 40, 0x888888, 0x444444);
+            gridHelper.position.y = 0.01;
+            gridHelper.material.opacity = 0.3;
+            gridHelper.material.transparent = true;
             scene.add(gridHelper);
             
-            const axesHelper = new THREE.AxesHelper(2);
+            const axesHelper = new THREE.AxesHelper(0.5);
             scene.add(axesHelper);
             
             updateLoadingStatus('Creating demo skeleton...');
@@ -1302,19 +1370,110 @@
             try {
                 characterSystem = new EnhancedCharacterSystem(scene, skeletonGroup);
                 
-                // Initialize textured skeleton in classroom (this does both classroom and texture application)
+                updateLoadingStatus('Loading Ichika VRM character...');
+                
+                // Initialize textured skeleton in classroom with Ichika
                 await characterSystem.initializeTexturedSkeletonInClassroom('ichika');
                 
-            // Initialize camera controller
-            // Check if ClassroomCameraController is available before initializing
-            if (typeof window.ClassroomCameraController !== 'undefined') {
-                console.log('🔍 Checking ClassroomCameraController availability:', typeof window.ClassroomCameraController);
-                cameraController = new window.ClassroomCameraController(camera, characterSystem);
-            } else {
-                console.warn('⚠️ ClassroomCameraController not available, skipping camera controller initialization');
-            }
+                // Load ACTUAL VRM character (not just textured skeleton)
+                try {
+                    statusDiv.textContent = 'Loading full Ichika VRM character...';
+                    
+                    // Create advanced VRM loader
+                    const vrmLoader = new AdvancedVRMLoader();
+                    const vrmCharacter = await vrmLoader.loadVRMCharacter('./assets/avatars/ichika.vrm', scene);
+                    
+                    // Position VRM character at the skeleton location
+                    vrmCharacter.setPosition(0, 0, 0);
+                    vrmCharacter.setScale(1.0); // Use full scale for VRM
+                    
+                    // Enable camera looking
+                    vrmCharacter.lookAtCamera(camera);
+                    
+                    // Store VRM character reference in character system
+                    characterSystem.vrmCharacter = vrmCharacter;
+                    
+                    // Fix VRM shader compatibility issues after loading
+                    if (vrmCharacter.vrm && vrmCharacter.vrm.scene) {
+                        console.log('🔧 Applying VRM shader compatibility fixes...');
+                        vrmCharacter.vrm.scene.traverse((child) => {
+                            if (child.isMesh && child.material) {
+                                // Disable shadows for VRM materials to prevent getShadow errors
+                                child.castShadow = false;
+                                child.receiveShadow = false;
+                                
+                                // Force material update
+                                if (child.material.needsUpdate !== undefined) {
+                                    child.material.needsUpdate = true;
+                                }
+                                
+                                // Remove any shadow-related uniforms that might cause issues
+                                if (child.material.uniforms) {
+                                    delete child.material.uniforms.shadowMap;
+                                    delete child.material.uniforms.directionalShadowMap;
+                                    delete child.material.uniforms.spotShadowMap;
+                                    delete child.material.uniforms.pointShadowMap;
+                                }
+                            }
+                        });
+                        console.log('✅ VRM shader compatibility fixes applied');
+                    }
+                    
+                    // Also apply textures to skeleton for comparison
+                    await characterSystem.applyVRMTextureToSkeleton('./assets/avatars/ichika.vrm');
+                    
+                    // Set display mode to show both skeleton and character
+                    characterSystem.setDisplayMode('both');
+                    
+                    currentCharacterFile = 'ichika.vrm';
+                    
+                    // Update UI to reflect loaded character
+                    document.getElementById('character-select').value = 'ichika.vrm';
+                    document.getElementById('display-mode').value = 'both';
+                    document.getElementById('current-character').textContent = 'Ichika (Full VRM + Skeleton)';
+                    document.getElementById('display-mode-info').textContent = 'both';
+                    
+                    statusDiv.textContent = '🎉 Full Ichika VRM character loaded!';
+                    console.log('🎉 Full Ichika VRM character loaded with skeleton!');
+                    
+                } catch (vrmError) {
+                    console.warn('⚠️ Failed to auto-load Ichika VRM:', vrmError);
+                    
+                    // Fallback to textured skeleton only
+                    try {
+                        await characterSystem.applyVRMTextureToSkeleton('./assets/avatars/ichika.vrm');
+                        characterSystem.setDisplayMode('textured_skeleton');
+                        currentCharacterFile = 'ichika.vrm';
+                        
+                        document.getElementById('character-select').value = 'ichika.vrm';
+                        document.getElementById('display-mode').value = 'textured_skeleton';
+                        document.getElementById('current-character').textContent = 'Ichika (Textured Skeleton)';
+                        document.getElementById('display-mode-info').textContent = 'textured_skeleton';
+                        
+                        statusDiv.textContent = '✅ Ichika textured skeleton loaded (VRM failed)';
+                        console.log('✅ Fallback: Ichika textured skeleton loaded');
+                    } catch (fallbackError) {
+                        console.error('❌ Both VRM and textured skeleton failed:', fallbackError);
+                        statusDiv.textContent = 'Character system ready (auto-load failed)';
+                    }
+                }
                 
-                console.log('✅ Character system with textured skeleton in classroom initialized');
+                // Initialize camera controller with optimal settings for character viewing
+                cameraController = new ClassroomCameraController(camera, characterSystem);
+                
+                // Set camera to character-focused view
+                camera.position.set(0, 1.6, 2.5); // Position from Ichika config
+                camera.lookAt(0, 1.15, 0); // Look at character center
+                camera.fov = 40; // Matching preview camera settings
+                camera.updateProjectionMatrix();
+                
+                if (cameraController) {
+                    cameraController.setCameraMode('front');
+                    document.getElementById('camera-mode').value = 'front';
+                    document.getElementById('camera-mode-info').textContent = 'front';
+                }
+                
+                console.log('✅ Character system with Ichika VRM initialized');
                 
                 // Set up event listeners for character controls
                 const characterSelect = document.getElementById('character-select');
@@ -1614,6 +1773,24 @@
                 
                 // Update bones and render
                 updateBones();
+                
+                // Update VRM character system (idle animations, facial expressions, etc.)
+                if (characterSystem && characterSystem.vrmAdapter) {
+                    const deltaTime = 0.016; // Approximate 60fps delta time
+                    characterSystem.vrmAdapter.tick(deltaTime);
+                }
+                
+                // Update full VRM character if available
+                if (characterSystem && characterSystem.vrmCharacter) {
+                    const deltaTime = 0.016;
+                    characterSystem.vrmCharacter.update(deltaTime);
+                }
+                
+                // Update camera controller
+                if (cameraController) {
+                    cameraController.update();
+                }
+                
                 renderer.render(scene, camera);
             }
 
@@ -1813,45 +1990,208 @@
             updateLoadingStatus('Loading default animation...');
             loadAnimation('neutral_reference.bvh');
             
-            // Enhanced animation loop with character system integration
+            // Enhanced animation loop with comprehensive error handling
             function enhancedAnimate() {
-                requestAnimationFrame(enhancedAnimate);
-                
-                if (isPlaying) {
-                    animationFrame += animationSpeed;
+                try {
+                    requestAnimationFrame(enhancedAnimate);
                     
-                    // Apply BVH animation
-                    if (bvhData[currentAnimation] && bvhData[currentAnimation].frames.length > 0) {
-                        const frames = bvhData[currentAnimation].frames;
-                        const frameIndex = Math.floor(animationFrame) % frames.length;
-                        const frameData = frames[frameIndex];
+                    if (isPlaying) {
+                        animationFrame += animationSpeed;
                         
-                        // Apply to skeleton
-                        applyBVHFrame(frameData);
-                        
-                        // Apply to character system
-                        if (characterSystem) {
-                            characterSystem.applyBVHFrame(frameData);
+                        // Apply BVH animation
+                        if (bvhData[currentAnimation] && bvhData[currentAnimation].frames.length > 0) {
+                            const frames = bvhData[currentAnimation].frames;
+                            const frameIndex = Math.floor(animationFrame) % frames.length;
+                            const frameData = frames[frameIndex];
+                            
+                            // Apply to skeleton
+                            try {
+                                applyBVHFrame(frameData);
+                            } catch (e) {
+                                console.warn('⚠️ BVH frame application error:', e.message);
+                            }
+                            
+                            // Apply to character system
+                            if (characterSystem) {
+                                try {
+                                    characterSystem.applyBVHFrame(frameData);
+                                } catch (e) {
+                                    console.warn('⚠️ Character system frame error:', e.message);
+                                }
+                            }
+                            
+                            document.getElementById('current-frame').textContent = `${frameIndex + 1}/${frames.length}`;
                         }
-                        
-                        document.getElementById('current-frame').textContent = `${frameIndex + 1}/${frames.length}`;
                     }
+                    
+                    // Update character system
+                    if (characterSystem) {
+                        try {
+                            characterSystem.update();
+                        } catch (e) {
+                            console.warn('⚠️ Character system update error:', e.message);
+                        }
+                    }
+                    
+                    // Update camera controller
+                    if (cameraController) {
+                        try {
+                            cameraController.update();
+                        } catch (e) {
+                            console.warn('⚠️ Camera controller error:', e.message);
+                        }
+                    }
+                    
+                    // Update bones
+                    try {
+                        updateBones();
+                    } catch (e) {
+                        console.warn('⚠️ Bone update error:', e.message);
+                    }
+                    
+                    // Safe rendering with error handling
+                    try {
+                        renderer.render(scene, camera);
+                    } catch (renderError) {
+                        console.warn('⚠️ Render error (attempting fix):', renderError.message);
+                        // Try to fix materials and continue
+                        fixSceneMaterials();
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Animation loop error:', error);
+                    // Add delay to prevent rapid error loops
+                    setTimeout(() => requestAnimationFrame(enhancedAnimate), 100);
                 }
-                
-                // Update character system
-                if (characterSystem) {
-                    characterSystem.update();
-                }
-                
-                // Update camera controller
-                if (cameraController) {
-                    cameraController.update();
-                }
-                
-                // Update bones and render
-                updateBones();
-                renderer.render(scene, camera);
             }
+            
+            // Function to fix scene materials with shader issues
+            function fixSceneMaterials() {
+                console.log('🔧 Attempting to fix scene materials...');
+                let fixedCount = 0;
+                
+                scene.traverse((object) => {
+                    if (object.material) {
+                        try {
+                            if (Array.isArray(object.material)) {
+                                object.material.forEach((mat, index) => {
+                                    if (fixMaterial(mat, object.name + '_mat_' + index)) {
+                                        fixedCount++;
+                                    }
+                                });
+                            } else {
+                                if (fixMaterial(object.material, object.name || 'unnamed')) {
+                                    fixedCount++;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('⚠️ Failed to fix material for object:', object.name, e.message);
+                            // Replace with basic material as fallback
+                            object.material = new THREE.MeshBasicMaterial({ 
+                                color: 0x888888,
+                                transparent: true,
+                                opacity: 0.8
+                            });
+                            fixedCount++;
+                        }
+                    }
+                });
+                
+                if (fixedCount > 0) {
+                    console.log(`✅ Fixed ${fixedCount} materials`);
+                }
+            }
+            
+            // Function to fix individual materials
+            function fixMaterial(material, objectName) {
+                if (!material) return false;
+                
+                let fixed = false;
+                
+                try {
+                    // Ensure material has required properties
+                    if (material.uniforms) {
+                        Object.keys(material.uniforms).forEach(key => {
+                            const uniform = material.uniforms[key];
+                            if (uniform && uniform.value === undefined) {
+                                uniform.value = getDefaultUniformValue(key);
+                                fixed = true;
+                            }
+                        });
+                    }
+                    
+                    // Disable problematic features for VRM compatibility
+                    material.castShadow = false;
+                    material.receiveShadow = false;
+                    
+                    // Ensure material properties are valid
+                    if (material.opacity === undefined) material.opacity = 1.0;
+                    if (material.transparent === undefined) material.transparent = false;
+                    
+                    // Force update
+                    material.needsUpdate = true;
+                    
+                } catch (e) {
+                    console.warn(`⚠️ Material fix failed for ${objectName}:`, e.message);
+                    return false;
+                }
+                
+                return fixed;
+            }
+            
+            // Get default values for common uniforms
+            function getDefaultUniformValue(uniformName) {
+                const defaults = {
+                    'opacity': 1.0,
+                    'alphaTest': 0.0,
+                    'time': 0.0,
+                    'resolution': new THREE.Vector2(window.innerWidth, window.innerHeight),
+                    'cameraPosition': camera.position.clone(),
+                    'modelMatrix': new THREE.Matrix4(),
+                    'viewMatrix': camera.matrixWorldInverse.clone(),
+                    'projectionMatrix': camera.projectionMatrix.clone(),
+                    'normalMatrix': new THREE.Matrix3(),
+                    'color': new THREE.Color(1, 1, 1),
+                    'emissive': new THREE.Color(0, 0, 0),
+                    'specular': new THREE.Color(1, 1, 1),
+                    'shininess': 30,
+                    'map': null,
+                    'normalMap': null,
+                    'roughnessMap': null,
+                    'metalnessMap': null
+                };
+                
+                return defaults[uniformName] || 0.0;
+            }
+            
+            // Force material compilation for the scene
+            function compileAllMaterials() {
+                console.log('🔄 Compiling all scene materials...');
+                try {
+                    renderer.compile(scene, camera);
+                    console.log('✅ Material compilation complete');
+                } catch (e) {
+                    console.warn('⚠️ Material compilation failed:', e.message);
+                    // Try alternative approach
+                    scene.traverse((object) => {
+                        if (object.material) {
+                            try {
+                                if (Array.isArray(object.material)) {
+                                    object.material.forEach(mat => mat.needsUpdate = true);
+                                } else {
+                                    object.material.needsUpdate = true;
+                                }
+                            } catch (err) {
+                                console.warn('⚠️ Failed to update material:', err.message);
+                            }
+                        }
+                    });
+                }
+            }
+            
+            // Make material fixing functions globally accessible
+            window.fixSceneMaterials = fixSceneMaterials;
+            window.compileAllMaterials = compileAllMaterials;
             
             // Replace the original animate function with enhanced version
             if (typeof animate !== 'undefined') {
@@ -1860,6 +2200,20 @@
             
             // Make enhancedAnimate globally accessible
             window.enhancedAnimate = enhancedAnimate;
+            
+            // Log comprehensive startup summary
+            console.log('🎉 RSMT Viewer initialization complete!');
+            console.log('📊 System Configuration:');
+            console.log('  - Shadow mapping:', renderer.shadowMap.enabled ? 'ENABLED' : 'DISABLED (VRM compatibility)');
+            console.log('  - Tone mapping:', renderer.toneMapping);
+            console.log('  - Output color space:', renderer.outputColorSpace);
+            console.log('  - Character system:', characterSystem ? 'LOADED' : 'FAILED');
+            console.log('  - Camera controller:', cameraController ? 'LOADED' : 'FAILED');
+            console.log('  - VRM character:', characterSystem?.vrmCharacter ? 'LOADED' : 'NOT LOADED');
+            console.log('  - Current character file:', currentCharacterFile || 'None');
+            console.log('🔧 Use fixVRMShaders() if you see shader errors');
+            console.log('💡 Use testLighting() to check lighting setup');
+            console.log('🌑 Use toggleShadows() to test shadow compatibility');
             
             // Hide loading screen
             updateLoadingStatus('Complete!');
@@ -2029,7 +2383,7 @@
                 skeletonGroup.rotation.set(
                     rootRotX,  // X: Forward/back lean (pitch)
                     rootRotY,  // Y: Left/right turning (yaw) - PRIMARY DIRECTION CONTROL
-                    rootRotZ   // Z: Side roll
+                    rootRotZ   // Z: Roll
                 );
             }
             
@@ -2595,7 +2949,6 @@
                     logInferenceEvent(`❌ TransitionNet initialization failed: ${error.message}`, 'error');
                 }
             } else {
-                updateModelStatus('transitionnet', 'Active', 'WebGPU inference ready');
                 logInferenceEvent('✅ TransitionNet already active on WebGPU', 'success');
             }
         }
@@ -2629,6 +2982,197 @@
         
         function initializeCharacterControls() {
             console.log('🎭 Initializing character control functions...');
+            
+            // Enhanced character testing and control functions
+            window.showFullVRMCharacter = function() {
+                if (characterSystem) {
+                    if (characterSystem.vrmCharacter) {
+                        characterSystem.setDisplayMode('character');
+                        document.getElementById('display-mode').value = 'character';
+                        statusDiv.textContent = 'Showing full VRM character';
+                        return '✅ Full VRM character visible';
+                    } else {
+                        statusDiv.textContent = 'Full VRM character not loaded';
+                        return '❌ Full VRM character not available';
+                    }
+                } else {
+                    return '❌ Character system not ready';
+                }
+            };
+            
+            // Comprehensive material diagnostics
+            window.diagnoseMaterials = function() {
+                console.log('🔍 Running comprehensive material diagnostics...');
+                
+                let totalObjects = 0;
+                let materialsFound = 0;
+                let problematicMaterials = 0;
+                let shaderMaterials = 0;
+                let vrmMaterials = 0;
+                const materialTypes = {};
+                const shaderErrors = [];
+                
+                scene.traverse((object) => {
+                    totalObjects++;
+                    
+                    if (object.material) {
+                        if (Array.isArray(object.material)) {
+                            object.material.forEach((mat, index) => {
+                                materialsFound++;
+                                analyzeMaterial(mat, `${object.name}_${index}`);
+                            });
+                        } else {
+                            materialsFound++;
+                            analyzeMaterial(object.material, object.name || 'unnamed');
+                        }
+                    }
+                });
+                
+                function analyzeMaterial(material, objectName) {
+                    if (!material) return;
+                    
+                    const type = material.type || 'Unknown';
+                    materialTypes[type] = (materialTypes[type] || 0) + 1;
+                    
+                    // Check for VRM materials
+                    if (type.includes('VRM') || type.includes('MToon')) {
+                        vrmMaterials++;
+                    }
+                    
+                    // Check for shader materials
+                    if (material.isShaderMaterial || material.isRawShaderMaterial) {
+                        shaderMaterials++;
+                        
+                        // Check uniforms
+                        if (material.uniforms) {
+                            Object.keys(material.uniforms).forEach(key => {
+                                const uniform = material.uniforms[key];
+                                if (uniform && uniform.value === undefined) {
+                                    shaderErrors.push(`${objectName}: ${key} uniform is undefined`);
+                                    problematicMaterials++;
+                                }
+                            });
+                        }
+                    }
+                    
+                    // Check for common issues
+                    if (material.map && !material.map.image) {
+                        shaderErrors.push(`${objectName}: texture map missing image`);
+                        problematicMaterials++;
+                    }
+                    
+                    if (material.opacity === undefined) {
+                        shaderErrors.push(`${objectName}: opacity undefined`);
+                        problematicMaterials++;
+                    }
+                }
+                
+                console.log('📊 Material Diagnostics Report:');
+                console.log(`  Total objects: ${totalObjects}`);
+                console.log(`  Materials found: ${materialsFound}`);
+                console.log(`  Shader materials: ${shaderMaterials}`);
+                console.log(`  VRM materials: ${vrmMaterials}`);
+                console.log(`  Problematic materials: ${problematicMaterials}`);
+                console.log('📋 Material types:', materialTypes);
+                
+                if (shaderErrors.length > 0) {
+                    console.log('⚠️ Shader errors found:');
+                    shaderErrors.forEach(error => console.log(`  - ${error}`));
+                }
+                
+                return {
+                    totalObjects,
+                    materialsFound,
+                    shaderMaterials,
+                    vrmMaterials,
+                    problematicMaterials,
+                    materialTypes,
+                    shaderErrors
+                };
+            };
+            
+            window.testLighting = function() {
+                console.log('💡 Testing lighting setup...');
+                
+                // Count lights in scene
+                let lightCount = 0;
+                scene.traverse((child) => {
+                    if (child.isLight) {
+                        lightCount++;
+                        console.log(`  Light: ${child.type}, Intensity: ${child.intensity}, Position: [${child.position.x.toFixed(1)}, ${child.position.y.toFixed(1)}, ${child.position.z.toFixed(1)}]`);
+                    }
+                });
+                
+                console.log(`Total lights in scene: ${lightCount}`);
+                console.log('Renderer shadow mapping:', renderer.shadowMap.enabled);
+                console.log('Tone mapping:', renderer.toneMapping);
+                console.log('Tone mapping exposure:', renderer.toneMappingExposure);
+                
+                return `✅ ${lightCount} lights configured - check console for details`;
+            };
+            
+            // Function to fix VRM shader issues on demand
+            window.fixVRMShaders = function() {
+                console.log('🔧 Attempting to fix VRM shader issues...');
+                
+                if (!characterSystem?.vrmCharacter?.vrm?.scene) {
+                    console.log('❌ No VRM character loaded');
+                    return 'No VRM character to fix';
+                }
+                
+                let fixedCount = 0;
+                characterSystem.vrmCharacter.vrm.scene.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        // Completely disable shadows
+                        child.castShadow = false;
+                        child.receiveShadow = false;
+                        
+                        // Force material to use basic lighting
+                        if (child.material.isMeshStandardMaterial || child.material.isMeshPhysicalMaterial) {
+                            // Convert to MeshLambertMaterial for better compatibility
+                            const newMaterial = new THREE.MeshLambertMaterial({
+                                map: child.material.map,
+                                color: child.material.color,
+                                transparent: child.material.transparent,
+                                opacity: child.material.opacity,
+                                side: child.material.side
+                            });
+                            child.material = newMaterial;
+                            fixedCount++;
+                        }
+                        
+                        // Force update
+                        child.material.needsUpdate = true;
+                    }
+                });
+                
+                console.log(`✅ Fixed ${fixedCount} VRM materials`);
+                return `Fixed ${fixedCount} VRM materials for better compatibility`;
+            };
+            
+            // Function to toggle shadow mapping for testing
+            window.toggleShadows = function() {
+                const enabled = !renderer.shadowMap.enabled;
+                renderer.shadowMap.enabled = enabled;
+                
+                // Update lights
+                scene.traverse((child) => {
+                    if (child.isDirectionalLight) {
+                        child.castShadow = enabled;
+                    }
+                });
+                
+                // Update objects
+                scene.traverse((child) => {
+                    if (child.isMesh && !child.userData.isVRM) {
+                        child.castShadow = enabled;
+                        child.receiveShadow = enabled;
+                    }
+                });
+                
+                console.log(`🌑 Shadows ${enabled ? 'enabled' : 'disabled'}`);
+                return `Shadows ${enabled ? 'enabled' : 'disabled'}`;
+            };
             
             // Character management functions
             window.loadSelectedCharacter = async function() {
