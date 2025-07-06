@@ -1412,6 +1412,73 @@
             
             updateLoadingStatus('Initializing character system...');
             
+            // Enhanced VRM lighting setup following chat demo patterns
+            window.enhanceVRMLighting = function(vrmCharacter) {
+                if (!vrmCharacter || !vrmCharacter.vrm) {
+                    console.warn('⚠️ No VRM character provided for lighting enhancement');
+                    return;
+                }
+                
+                console.log('💡 Enhancing VRM character lighting...');
+                
+                // Update existing lights for better anime character lighting
+                if (window.keyLight) {
+                    window.keyLight.intensity = 1.8; // Increase key light
+                    window.keyLight.position.set(1.5, 2.5, 2); // Closer to character
+                }
+                
+                if (window.fillLight) {
+                    window.fillLight.intensity = 1.2; // Softer fill
+                    window.fillLight.color.setHex(0xfff5e6); // Warmer fill light
+                }
+                
+                if (window.rimLight) {
+                    window.rimLight.intensity = 1.0;
+                    window.rimLight.color.setHex(0xbbd4ff); // Cool rim light
+                }
+                
+                if (window.faceLight) {
+                    window.faceLight.intensity = 1.5; // Important for face visibility
+                    window.faceLight.position.set(0, 1.8, 1.2); // Focus on face height
+                }
+                
+                // Add character-specific lighting
+                const characterLight = new THREE.SpotLight(0xffffff, 0.8);
+                characterLight.position.set(0, 2, 1);
+                characterLight.target = vrmCharacter.vrm.scene;
+                characterLight.angle = Math.PI / 4;
+                characterLight.penumbra = 0.3;
+                characterLight.castShadow = false; // Avoid VRM shader conflicts
+                scene.add(characterLight);
+                
+                // Store reference for later adjustment
+                window.characterLight = characterLight;
+                
+                // Apply anime-style material enhancements
+                vrmCharacter.vrm.scene.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        // Enhance material properties for anime look
+                        if (child.material.isMToonMaterial) {
+                            // MToon materials get special treatment
+                            child.material.shadeMultiply = new THREE.Color(0.8, 0.8, 0.9); // Slightly cool shadows
+                            child.material.parametricRimColorFactor = 0.5; // Subtle rim lighting
+                            child.material.parametricRimLiftFactor = 0.3;
+                        } else if (child.material.isMeshStandardMaterial || child.material.isMeshBasicMaterial) {
+                            // Standard materials get improved lighting response
+                            child.material.roughness = 0.8; // Slightly rough for anime look
+                            child.material.metalness = 0.1; // Very low metalness
+                        }
+                        
+                        // Ensure materials receive lighting properly
+                        child.material.needsUpdate = true;
+                        child.castShadow = false; // Avoid shadow issues
+                        child.receiveShadow = false;
+                    }
+                });
+                
+                console.log('✅ VRM lighting enhancement complete');
+            };
+            
             // Initialize Enhanced Character System
             try {
                 characterSystem = new EnhancedCharacterSystem(scene, skeletonGroup);
@@ -1445,65 +1512,63 @@
                     // Also store globally for debugging and lighting tests
                     window.vrmCharacter = vrmCharacter;
                     
-                    // Fix VRM shader compatibility issues after loading
+                    // Fix VRM shader compatibility issues after loading - AGGRESSIVE MODE
                     if (vrmCharacter.vrm && vrmCharacter.vrm.scene) {
-                        console.log('🔧 Applying VRM shader compatibility fixes...');
+                        console.log('🔧 Applying AGGRESSIVE VRM shader compatibility fixes...');
                         vrmCharacter.vrm.scene.traverse((child) => {
                             if (child.isMesh && child.material) {
-                                // Disable shadows for VRM materials to prevent getShadow errors
+                                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                                materials.forEach((mat, index) => {
+                                    // AGGRESSIVE: Replace ANY potentially problematic material
+                                    if (mat.isMToonMaterial || 
+                                        mat.type === 'ShaderMaterial' || 
+                                        mat.type === 'RawShaderMaterial' ||
+                                        (mat.uniforms && Object.keys(mat.uniforms).length > 0) ||
+                                        mat.vertexShader || 
+                                        mat.fragmentShader ||
+                                        mat.name.includes('MToon') ||
+                                        mat.name.includes('VRM') ||
+                                        mat.name.includes('Face_') ||
+                                        mat.name.includes('Body_') ||
+                                        mat.name.includes('Hair') ||
+                                        mat.name.includes('baked')) {
+                                        
+                                        console.log(`🔄 VRM: Replacing problematic material: ${mat.type} - ${mat.name}`);
+                                        
+                                        // Create bulletproof basic material
+                                        const newMaterial = new THREE.MeshBasicMaterial({
+                                            map: mat.map || null,
+                                            color: mat.color || new THREE.Color(0.8, 0.8, 0.8),
+                                            transparent: mat.transparent || false,
+                                            opacity: mat.opacity || 1.0,
+                                            side: mat.side || THREE.FrontSide,
+                                            name: `VRMFixed_${mat.name || 'Material'}_${index}`,
+                                            fog: false,
+                                            lights: false
+                                        });
+                                        
+                                        if (Array.isArray(child.material)) {
+                                            child.material[index] = newMaterial;
+                                        } else {
+                                            child.material = newMaterial;
+                                        }
+                                    }
+                                });
+                                
+                                // Remove shadows to prevent render conflicts
                                 child.castShadow = false;
                                 child.receiveShadow = false;
-                                
-                                // Force material update
-                                if (child.material.needsUpdate !== undefined) {
-                                    child.material.needsUpdate = true;
-                                }
-                                
-                                // Fix shader uniform issues
-                                if (child.material.uniforms) {
-                                    // Remove any shadow-related uniforms that might cause issues
-                                    delete child.material.uniforms.shadowMap;
-                                    delete child.material.uniforms.directionalShadowMap;
-                                    delete child.material.uniforms.spotShadowMap;
-                                    delete child.material.uniforms.pointShadowMap;
-                                    
-                                    // Ensure all uniforms have valid values
-                                    Object.keys(child.material.uniforms).forEach(key => {
-                                        const uniform = child.material.uniforms[key];
-                                        if (uniform && uniform.value === undefined) {
-                                            // Set safe default values for undefined uniforms
-                                            console.warn(`⚠️ Fixing undefined uniform: ${key}`);
-                                            if (key.includes('matrix') || key.includes('Matrix')) {
-                                                uniform.value = new THREE.Matrix4();
-                                            } else if (key.includes('color') || key.includes('Color')) {
-                                                uniform.value = new THREE.Color(1, 1, 1);
-                                            } else if (key.includes('vector') || key.includes('Vector')) {
-                                                uniform.value = new THREE.Vector3(0, 0, 0);
-                                            } else {
-                                                uniform.value = 0;
-                                            }
-                                        }
-                                    });
-                                }
-                                
-                                // If it's a MToon material, ensure proper setup
-                                if (child.material.isMToonMaterial) {
-                                    try {
-                                        // Ensure MToon material is properly configured
-                                        child.material.transparent = true;
-                                        child.material.alphaTest = 0.01;
-                                        child.material.needsUpdate = true;
-                                    } catch (e) {
-                                        console.warn('⚠️ MToon material setup error:', e.message);
-                                    }
-                                }
                             }
                         });
-                        console.log('✅ VRM shader compatibility fixes applied');
+                        console.log('✅ AGGRESSIVE VRM shader compatibility fixes applied');
                     }
                     
                     // Apply enhanced lighting specifically for the VRM character
-                    enhanceVRMLighting(vrmCharacter);
+                    if (typeof enhanceVRMLighting === 'function') {
+                        enhanceVRMLighting(vrmCharacter);
+                    } else {
+                        console.log('⚠️ enhanceVRMLighting function not yet available, will apply later');
+                    }
                     
                     // Also apply textures to skeleton for comparison
                     await characterSystem.applyVRMTextureToSkeleton('./assets/avatars/ichika.vrm');
@@ -1579,6 +1644,10 @@
             }
             
             updateLoadingStatus('Starting animation...');
+            
+            // FINAL AGGRESSIVE MATERIAL CLEANUP before animation starts
+            console.log('🧹 FINAL CLEANUP: Fixing all scene materials before animation...');
+            fixSceneMaterials();
             
             // Animation styles with different parameters
             const animationStyles = {
@@ -2075,6 +2144,7 @@
             let animationHalted = false;
             let lastErrorMessage = '';
             let errorMessageCount = 0;
+            let materialFixAttempted = false; // Prevent endless material fixing loops
 
             // Start animation loop and load first animation
             enhancedAnimate();
@@ -2151,6 +2221,7 @@
                         renderer.render(scene, camera);
                         consecutiveErrors = 0; // Reset on successful render
                         renderErrorCount = 0;
+                        materialFixAttempted = false; // Allow material fixing again if needed
                     } catch (renderError) {
                         consecutiveErrors++;
                         renderErrorCount++;
@@ -2172,15 +2243,20 @@
                         
                         // Try different fix strategies based on error count
                         if (consecutiveErrors < maxConsecutiveErrors) {
-                            if (consecutiveErrors <= 3) {
+                            if (consecutiveErrors <= 3 && !materialFixAttempted) {
                                 console.log('🔧 Attempting to fix scene materials...');
                                 fixSceneMaterials();
+                                materialFixAttempted = true; // Prevent repeated attempts
                             } else if (consecutiveErrors <= 6) {
                                 console.log('🔧 Attempting to compile materials...');
                                 compileAllMaterials();
                             } else {
                                 console.log('🔧 Running material diagnostics...');
-                                diagnoseMaterials();
+                                if (scene && typeof diagnoseMaterials === 'function') {
+                                    diagnoseMaterials();
+                                } else {
+                                    console.warn('⚠️ Scene or diagnoseMaterials function not available');
+                                }
                             }
                         } else {
                             console.error(`💥 Too many consecutive render errors (${consecutiveErrors}). HALTING ANIMATION.`);
@@ -2207,53 +2283,72 @@
                 }   
             }
             
-            // Material fixing functions
+            // Material fixing functions - ULTRA AGGRESSIVE MODE
             function fixSceneMaterials() {
-                console.log('🔧 Fixing scene materials for VRM compatibility...');
+                console.log('🔧 AGGRESSIVE: Replacing ALL VRM materials for compatibility...');
                 let fixedCount = 0;
                 
                 scene.traverse((object) => {
                     if (object.material) {
                         const materials = Array.isArray(object.material) ? object.material : [object.material];
-                        materials.forEach((mat) => {
-                            // Ensure material has required properties and default undefined uniforms
-                            if (mat.uniforms) {
-                                for (const key in mat.uniforms) { // Use for...in for compatibility
-                                    const uniform = mat.uniforms[key];
-                                    if (uniform && uniform.value === undefined) {
-                                        uniform.value = getDefaultUniformValue(key);
-                                        fixedCount++;
-                                    }
-                                }
-                            }
-                            
-                            // Disable problematic features for VRM compatibility
-                            mat.castShadow = false;
-                            mat.receiveShadow = false;
-                            
-                            // Force material update
-                            mat.needsUpdate = true;
-                            
-                            // Convert to MeshLambertMaterial for better compatibility if it's a complex material
-                            if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial || mat.isMeshPhongMaterial) {
-                                const newMaterial = new THREE.MeshLambertMaterial({
-                                    map: mat.map,
-                                    color: mat.color,
-                                    emissive: mat.emissive,
-                                    transparent: mat.transparent, // Keep original transparency
-                                    opacity: mat.opacity,       // Keep original opacity
-                                    side: mat.side              // Keep original side
+                        materials.forEach((mat, index) => {
+                            // AGGRESSIVE: Replace ANY material that might cause shader issues
+                            if (mat.isMToonMaterial || 
+                                mat.type === 'ShaderMaterial' || 
+                                mat.type === 'RawShaderMaterial' ||
+                                (mat.uniforms && Object.keys(mat.uniforms).length > 0) ||
+                                mat.vertexShader || 
+                                mat.fragmentShader ||
+                                mat.name.includes('MToon') ||
+                                mat.name.includes('VRM') ||
+                                mat.name.includes('Face_') ||
+                                mat.name.includes('Body_') ||
+                                mat.name.includes('Hair') ||
+                                mat.name.includes('baked')) {
+                                
+                                // Create super-simple material
+                                const newMaterial = new THREE.MeshBasicMaterial({
+                                    map: mat.map || null,
+                                    color: mat.color || new THREE.Color(0.8, 0.8, 0.8),
+                                    transparent: mat.transparent || false,
+                                    opacity: mat.opacity || 1.0,
+                                    side: mat.side || THREE.FrontSide,
+                                    name: `UltraFixed_${mat.name || 'Material'}_${index}`,
+                                    fog: false,
+                                    lights: false
                                 });
-                                object.material = newMaterial;
+                                
+                                if (Array.isArray(object.material)) {
+                                    object.material[index] = newMaterial;
+                                } else {
+                                    object.material = newMaterial;
+                                }
                                 fixedCount++;
+                                console.log(`🔄 Replaced material: ${mat.type} -> MeshBasicMaterial`);
+                            } else {
+                                // Even for safe materials, ensure no problematic properties
+                                if (mat.uniforms) {
+                                    delete mat.uniforms; // Remove all uniforms
+                                }
+                                
+                                // Remove all shader-related properties
+                                delete mat.vertexShader;
+                                delete mat.fragmentShader;
+                                delete mat.defines;
+                                
+                                // Disable problematic features
+                                mat.castShadow = false;
+                                mat.receiveShadow = false;
+                                mat.fog = false;
+                                
+                                // Force material update
+                                mat.needsUpdate = true;
                             }
                         });
                     }
                 });
                 
-                if (fixedCount > 0) {
-                    console.log(`✅ Fixed ${fixedCount} materials with shader issues`);
-                }
+                console.log(`✅ ULTRA-FIXED ${fixedCount} materials - converted to MeshBasicMaterial`);
                 return fixedCount > 0;
             }
             
@@ -3121,76 +3216,6 @@
         }
 
 
-        // === VRM LIGHTING ENHANCEMENT ===
-        
-        // Enhanced VRM lighting setup following chat demo patterns
-        window.enhanceVRMLighting = function(vrmCharacter) {
-            if (!vrmCharacter || !vrmCharacter.vrm) {
-                console.warn('⚠️ No VRM character provided for lighting enhancement');
-                return;
-            }
-            
-            console.log('💡 Enhancing VRM character lighting...');
-            
-            // Update existing lights for better anime character lighting
-            if (window.keyLight) {
-                window.keyLight.intensity = 1.8; // Increase key light
-                window.keyLight.position.set(1.5, 2.5, 2); // Closer to character
-            }
-            
-            if (window.fillLight) {
-                window.fillLight.intensity = 1.2; // Softer fill
-                window.fillLight.color.setHex(0xfff5e6); // Warmer fill light
-            }
-            
-            if (window.rimLight) {
-                window.rimLight.intensity = 1.0;
-                window.rimLight.color.setHex(0xbbd4ff); // Cool rim light
-            }
-            
-            if (window.faceLight) {
-                window.faceLight.intensity = 1.5; // Important for face visibility
-                window.faceLight.position.set(0, 1.8, 1.2); // Focus on face height
-            }
-            
-            // Add character-specific lighting
-            const characterLight = new THREE.SpotLight(0xffffff, 0.8);
-            characterLight.position.set(0, 2, 1);
-            characterLight.target = vrmCharacter.vrm.scene;
-            characterLight.angle = Math.PI / 4;
-            characterLight.penumbra = 0.3;
-            characterLight.castShadow = false; // Avoid VRM shader conflicts
-            scene.add(characterLight);
-            
-            // Store reference for later adjustment
-            window.characterLight = characterLight;
-            
-            // Apply anime-style material enhancements
-            vrmCharacter.vrm.scene.traverse((child) => {
-                if (child.isMesh && child.material) {
-                    // Enhance material properties for anime look
-                    if (child.material.isMToonMaterial) {
-                        // MToon materials get special treatment
-                        child.material.shadeMultiply = new THREE.Color(0.8, 0.8, 0.9); // Slightly cool shadows
-                        child.material.parametricRimColorFactor = 0.5; // Subtle rim lighting
-                        child.material.parametricRimLiftFactor = 0.3;
-                    } else if (child.material.isMeshStandardMaterial || child.material.isMeshBasicMaterial) {
-                        // Standard materials get improved lighting response
-                        child.material.roughness = 0.8; // Slightly rough for anime look
-                        child.material.metalness = 0.1; // Very low metalness
-                    }
-                    
-                    // Ensure materials receive lighting properly
-                    child.material.needsUpdate = true;
-                    child.castShadow = false; // Avoid shadow issues
-                    child.receiveShadow = false;
-                }
-            });
-            
-            console.log('✅ VRM lighting enhancement complete');
-        };
-
-
         // === CHARACTER SYSTEM CONTROL FUNCTIONS ===
         
         function initializeCharacterControls() {
@@ -3216,6 +3241,12 @@
             // Comprehensive material diagnostics
             window.diagnoseMaterials = function() {
                 console.log('🔍 Running comprehensive material diagnostics...');
+                
+                // Check if scene exists
+                if (!scene) {
+                    console.warn('⚠️ Scene not available for diagnostics');
+                    return;
+                }
                 
                 let totalObjects = 0;
                 let materialsFound = 0;
