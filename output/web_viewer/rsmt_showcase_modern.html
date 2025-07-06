@@ -1575,6 +1575,11 @@
                     
                     // Set display mode to show both skeleton and character
                     characterSystem.setDisplayMode('both');
+                    
+                    currentCharacterFile = 'ichika.vrm';
+                    
+                    // Update UI to reflect loaded character
+                    document.getElementById('character-select').value = 'ichika.vrm';
                     document.getElementById('display-mode').value = 'both';
                     document.getElementById('current-character').textContent = 'Ichika (Full VRM + Skeleton)';
                     document.getElementById('display-mode-info').textContent = 'both';
@@ -2614,8 +2619,8 @@
                             case 'skeleton':
                                 skeletonGroup.visible = true;
                                 // Hide VRM character if possible
-                                if (window.currentVRMAdapter.vrm.scene) {
-                                    window.currentVRMAdapter.vrm.scene.visible = false;
+                                if (window.currentVRMAdapter.vrmModel.scene) {
+                                    window.currentVRMAdapter.vrmModel.scene.visible = false;
                                 }
                                 applySkeletonTransformations(rootX, rootY, rootZ, rootRotX, rootRotY, rootRotZ, frameData);
                                 break;
@@ -2624,8 +2629,8 @@
                             default:
                                 skeletonGroup.visible = true;
                                 // Show VRM character
-                                if (window.currentVRMAdapter.vrm.scene) {
-                                    window.currentVRMAdapter.vrm.scene.visible = true;
+                                if (window.currentVRMAdapter.vrmModel.scene) {
+                                    window.currentVRMAdapter.vrmModel.scene.visible = true;
                                 }
                                 applySkeletonTransformations(rootX, rootY, rootZ, rootRotX, rootRotY, rootRotZ, frameData);
                                 break;
@@ -2654,11 +2659,6 @@
                     frame: animationFrame,
                     rootPos: { x: rootX.toFixed(2), y: rootY.toFixed(2), z: rootZ.toFixed(2) },
                     rootRotDeg: { 
-                        x: (rootRotX*180/Math.PI).toFixed(1) + '° (pitch/lean)', 
-                        y: (rootRotY*180/Math.PI).toFixed(1) + '° (YAW/TURN - main direction)', 
-                        z: (rootRotZ*180/Math.PI).toFixed(1) + '° (roll/side)' 
-                    },
-                    rootRotRad: { x: rootRotX.toFixed(3), y: rootRotY.toFixed(3), z: rootRotZ.toFixed(3) },
                         x: (rootRotX*180/Math.PI).toFixed(1) + '° (pitch/lean)', 
                         y: (rootRotY*180/Math.PI).toFixed(1) + '° (YAW/TURN - main direction)', 
                         z: (rootRotZ*180/Math.PI).toFixed(1) + '° (roll/side)' 
@@ -3595,14 +3595,14 @@
                 console.log('🔍 VRM Debug State:');
                 console.log('  currentVRMAdapter:', !!window.currentVRMAdapter);
                 if (window.currentVRMAdapter) {
-                    console.log('  vrm:', !!window.currentVRMAdapter.vrm);
+                    console.log('  vrmModel:', !!window.currentVRMAdapter.vrmModel);
                     console.log('  initialized:', window.currentVRMAdapter.initialized);
                     console.log('  available bones:', window.currentVRMAdapter.getAvailableBones?.().length || 'no method');
-                    console.log('  scene in global scene:', scene.children.some(child => child === window.currentVRMAdapter.vrm?.scene));
-                    if (window.currentVRMAdapter.vrm?.scene) {
-                        console.log('  scene visible:', window.currentVRMAdapter.vrm.scene.visible);
-                        console.log('  scene position:', window.currentVRMAdapter.vrm.scene.position);
-                        console.log('  scene children:', window.currentVRMAdapter.vrm.scene.children.length);
+                    console.log('  scene in global scene:', scene.children.some(child => child === window.currentVRMAdapter.vrmModel?.scene));
+                    if (window.currentVRMAdapter.vrmModel?.scene) {
+                        console.log('  scene visible:', window.currentVRMAdapter.vrmModel.scene.visible);
+                        console.log('  scene position:', window.currentVRMAdapter.vrmModel.scene.position);
+                        console.log('  scene children:', window.currentVRMAdapter.vrmModel.scene.children.length);
                     }
                 }
                 console.log('  vrmCharacter:', !!window.vrmCharacter);
@@ -3612,16 +3612,8 @@
                 if (window.currentVRMAdapter && bvhData[currentAnimation]?.frames?.length > 0) {
                     console.log('🧪 Testing manual frame application...');
                     const testFrame = bvhData[currentAnimation].frames[0];
-                    try {
-                        const result = window.currentVRMAdapter.applyBVHFrameToVRM(testFrame);
-                        console.log('  Manual frame application result:', result);
-                        console.log('  Test frame data length:', testFrame.length);
-                        console.log('  Test frame sample:', testFrame.slice(0, 6));
-                    } catch (error) {
-                        console.error('  Manual frame application error:', error);
-                    }
-                } else {
-                    console.log('❌ Cannot test frame application - missing adapter or data');
+                    const result = window.currentVRMAdapter.applyBVHFrameToVRM(testFrame);
+                    console.log('  Manual frame application result:', result);
                 }
                 
                 return 'VRM debug info logged to console';
