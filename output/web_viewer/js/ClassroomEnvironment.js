@@ -4,6 +4,10 @@
  */
 class ClassroomEnvironment {
     constructor(scene) {
+        console.log('🏫 ClassroomEnvironment constructor called with scene:', scene);
+        console.log('🏫 Scene type:', typeof scene);
+        console.log('🏫 Scene is valid THREE.Scene:', scene instanceof THREE.Scene);
+        
         this.scene = scene;
         this.environment = null;
         this.objects = [];

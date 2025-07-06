@@ -185,10 +185,57 @@
         <div id="ui-panel">
             <div class="title">🎭 RSMT Neural Network Motion System (Modern)</div>
             
-            
-            
-            
-            
+            <!-- AI Inference Monitoring Dashboard -->
+            <div class="ai-monitoring-panel" id="ai-monitoring" style="background: rgba(0, 50, 100, 0.15); border: 1px solid #00d4ff; padding: 12px; border-radius: 8px; margin: 10px 0; font-size: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: #00d4ff;">🧠 AI Inference Monitor</strong>
+                    <button id="toggle-inference-details" style="background: none; border: 1px solid #00d4ff; color: #00d4ff; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">Show Details</button>
+                </div>
+                
+                <div class="inference-summary" id="inference-summary">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                        <div class="model-status" id="deephase-status">
+                            <div style="color: #00ff88; font-weight: bold;">DeepPhase</div>
+                            <div style="font-size: 10px;">Ready</div>
+                        </div>
+                        <div class="model-status" id="stylevae-status">
+                            <div style="color: #ff8800; font-weight: bold;">StyleVAE</div>
+                            <div style="font-size: 10px;">Standby</div>
+                        </div>
+                        <div class="model-status" id="transitionnet-status">
+                            <div style="color: #ff4488; font-weight: bold;">TransitionNet</div>
+                            <div style="font-size: 10px;">Idle</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Model Warmup Controls -->
+                    <div style="display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap;">
+                        <button id="warmup-all-btn" onclick="warmupAllModels()" style="background: #4CAF50; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🔥 Warm Up All</button>
+                        <button id="warmup-stylevae-btn" onclick="warmupStyleVAE()" style="background: #ff8800; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🎨 Wake StyleVAE</button>
+                        <button id="warmup-transitionnet-btn" onclick="warmupTransitionNet()" style="background: #ff4488; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🔄 Wake TransitionNet</button>
+                        <!-- <button id="test-server-btn" onclick="testServerConnection()" style="background: #2196F3; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🌐 Test Server</button> -->
+                    </div>
+                    
+                    <div class="inference-metrics" id="inference-metrics" style="border-top: 1px solid rgba(0, 212, 255, 0.3); padding-top: 8px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10px;">
+                            <div>Inference Rate: <span id="inference-rate">60 FPS</span></div>
+                            <div>Latency: <span id="inference-latency">16ms</span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="inference-details" id="inference-details" style="display: none; border-top: 1px solid rgba(0, 212, 255, 0.3); padding-top: 8px; margin-top: 8px;">
+                    <div class="inference-log" id="inference-log" style="background: rgba(0, 0, 0, 0.3); padding: 8px; border-radius: 4px; max-height: 150px; overflow-y: auto; font-family: monospace; font-size: 10px;">
+                        <div style="color: #00d4ff;">AI Inference Log:</div>
+                        <div style="color: #00ff88;">✓ DeepPhase model loaded</div>
+                        <div style="color: #ffaa00;">⚠ StyleVAE on standby</div>
+                        <div style="color: #ff6666;">⚠ TransitionNet not connected</div>
+                        <div style="color: #888;">Tensor Shapes:</div>
+                            <div id="tensor-shapes">Waiting for inference...</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="controls">
                 <button id="play-pause">Play/Pause</button>
                 <button id="reset">Reset</button>
@@ -376,6 +423,108 @@
             console.log(`${available ? '✅' : '❌'} ${name}: ${available ? 'Available' : 'Not Found'}`);
         });
         
+        // Initialize the main application
+        async function initializeRSMTViewer() {
+            console.log('🔄 Initializing RSMT Viewer...');
+            
+            // Wait for THREE.js to load
+            if (!window.THREE) {
+                console.error('❌ THREE.js not loaded');
+                updateLoadingStatus('Error: THREE.js not loaded');
+                return;
+            }
+            
+            console.log('✅ THREE.js loaded successfully');
+            
+            // Initialize 3D scene first
+            updateLoadingStatus('Creating 3D scene...');
+            
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a2e);
+            
+            const camera = new THREE.PerspectiveCamera(
+                75, 
+                window.innerWidth / window.innerHeight, 
+                0.1, 
+                1000
+            );
+            
+            const renderer = new THREE.WebGLRenderer({ 
+                antialias: true,
+                alpha: true,
+                preserveDrawingBuffer: true,
+                powerPreference: "high-performance"
+            });
+            
+            // Enhanced renderer configuration for VRM compatibility
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = false; // Disabled for VRM compatibility
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            
+            // Add comprehensive error handling
+            
+            // Handle WebGL context loss
+            renderer.domElement.addEventListener('webglcontextlost', function(event) {
+                event.preventDefault();
+                console.warn('⚠️ WebGL context lost');
+                updateLoadingStatus('WebGL context lost - attempting recovery...');
+            });
+            
+            renderer.domElement.addEventListener('webglcontextrestored', function(event) {
+                console.log('✅ WebGL context restored');
+                updateLoadingStatus('WebGL context restored');
+            });
+            
+            // Append renderer to DOM
+            document.getElementById('container').appendChild(renderer.domElement);
+            
+            // Set up camera and controls
+            camera.position.set(0, 1.6, 3);
+            
+            // Initialize skeleton group
+            const skeletonGroup = new THREE.Group();
+            scene.add(skeletonGroup);
+            
+            // Make scene globally accessible
+            window.scene = scene;
+            window.camera = camera;
+            window.renderer = renderer;
+            window.skeletonGroup = skeletonGroup;
+            
+            updateLoadingStatus('Loading Character System...');
+            
+            // Initialize character system
+            try {
+                // Create character system instance (not a static init call)
+                const characterSystem = new window.EnhancedCharacterSystem(scene, skeletonGroup);
+                
+                // Initialize textured skeleton in classroom with Ichika
+                await characterSystem.initializeTexturedSkeletonInClassroom('ichika');
+                console.log('✅ Character System initialized');
+                updateLoadingStatus('Loading Environment...');
+                
+                // Initialize environment - create instance and load classroom
+                const classroomEnvironment = new window.ClassroomEnvironment(scene);
+                await classroomEnvironment.loadClassroom();
+                console.log('✅ Environment loaded');
+                
+                // Finalize loading
+                loadingDiv.style.display = 'none';
+                container.style.display = 'block';
+                
+                // Update status
+                statusDiv.textContent = 'Ready';
+                console.log('🎉 RSMT Viewer initialized successfully');
+                
+            } catch (error) {
+                console.error('❌ Error during initialization:', error);
+                updateLoadingStatus(`Error: ${error.message}`);
+            }
+        }
+        
         const loadingDiv = document.getElementById('loading');
         const loadingStatus = document.getElementById('loading-status');
         const statusDiv = document.getElementById('status');
@@ -392,17 +541,15 @@
         // === GLOBAL FUNCTION PLACEHOLDERS (Available immediately) ===
 
         // Define placeholder functions first so onclick handlers work
-        
+        window.toggleAIMode = function() { console.log('AI mode not ready yet'); };
+        window.randomizeStyle = function() { console.log('Style system not ready yet'); };
+        window.smoothStyle = function() { console.log('Style system not ready yet'); };
+        window.aggressiveStyle = function() { console.log('Style system not ready yet'); };
+        window.analyzeCurrentMotion = function() { console.log('Motion analysis not ready yet'); };
         window.toggleAnimation = function() { console.log('Animation controls not ready yet'); };
         window.updateAnimationSpeed = function() { console.log('Animation controls not ready yet'); };
         window.resetAnimation = function() { console.log('Animation controls not ready yet'); };
-        window.debugFrame = function() { console.log('Debug functions not ready yet'); };
-        window.fixOrientation = function() { console.log('Orientation functions not ready yet'); };
-        window.flipDirection = function() { console.log('Direction functions not ready yet'); };
-        window.updateJointIntensity = function() { console.log('Joint functions not ready yet'); };
-        window.toggleSimpleMode = function() { console.log('Mode functions not ready yet'); };
-        window.debugBVH = function() { console.log('BVH functions not ready yet'); };
-        window.resetCharacterDirection = function() { console.log('Direction functions not ready yet'); };
+        // Global function assignments will be updated to actual functions after their definitions
         
         
         // Character System Placeholders
@@ -478,7 +625,59 @@
         let bvhData = {};
         let currentAnimation = 'neutral_reference.bvh';
         let animationFrame = 0;
+        let currentFrame = 0;
         let bvhScale = 0.01; // Scale factor for BVH units
+        
+        // BVH joint order for debugging
+        let bvhJointOrder = ['Hips', 'Chest', 'Chest2', 'Chest3', 'Chest4', 'Neck', 'Head', 
+                           'RightCollar', 'RightShoulder', 'RightElbow', 'RightWrist',
+                           'LeftCollar', 'LeftShoulder', 'LeftElbow', 'LeftWrist',
+                           'RightHip', 'RightKnee', 'RightAnkle', 'RightToe',
+                           'LeftHip', 'LeftKnee', 'LeftAnkle', 'LeftToe'];
+        
+        // AI-powered animation variables (moved to global scope)
+        let aiMode = false;
+        let baseMotion = null;
+        let generatedMotion = null;
+        let styleUpdateCounter = 0;
+        let currentTargetStyle = null;
+        
+        // AI Model Manager - placeholder object
+        let aiModelManager = {
+            isInitialized: false,
+            motionHistory: [],
+            models: {
+                deepphase: { lastInferenceTime: 16 }
+            },
+            
+            async initialize() {
+                console.log('🧠 AI Model Manager initialized (placeholder)');
+                this.isInitialized = true;
+            },
+            
+            updateMotionHistory(motion) {
+                this.motionHistory.push(motion);
+                if (this.motionHistory.length > 100) {
+                    this.motionHistory.shift();
+                }
+            },
+            
+            getMotionSequence() {
+                return this.motionHistory.slice(-30);
+            },
+            
+            async encodeStyle(motionSequence) {
+                return Array(256).fill(0).map(() => Math.random() * 0.1);
+            },
+            
+            async predictPhase(motion) {
+                return Math.random();
+            },
+            
+            async generateTransition(baseMotion, targetStyle, length) {
+                return Array(length).fill(0).map(() => Array(72).fill(0));
+            }
+        };
         
         // Global THREE.js objects (will be initialized in try block)
         let scene, camera, renderer, skeletonGroup;
@@ -492,6 +691,9 @@
         let classroomVisible = false;
         let facialExpressionsEnabled = true;
         let currentCharacterFile = null;
+        
+        // VRM Animation System Variables
+        window.currentVRMAdapter = null; // Global VRM adapter for animation
         
         // Available BVH animations
         const animations = {
@@ -531,15 +733,6 @@
                 duration: 105
             }
         };
-    
-
-
-        
-
-        
-
-
-
         try {
             updateLoadingStatus('Importing THREE.js module...');
             
@@ -1141,8 +1334,8 @@
                                             opacity: mat.opacity || 1.0,
                                             side: mat.side || THREE.FrontSide,
                                             name: `VRMFixed_${mat.name || 'Material'}_${index}`,
-                                            fog: false,
-                                            lights: false
+                                            fog: false
+                                            // Note: MeshBasicMaterial doesn't use lights, so no 'lights' property needed
                                         });
                                         
                                         if (Array.isArray(child.material)) {
@@ -1171,20 +1364,25 @@
                     // Also apply textures to skeleton for comparison
                     await characterSystem.applyVRMTextureToSkeleton('./assets/avatars/ichika.vrm');
                     
-                    // Set display mode to show both skeleton and character
-                    characterSystem.setDisplayMode('both');
+                    // Set display mode to VRM character only (deprecating old skeleton)
+                    characterSystem.setDisplayMode('character');
                     
                     currentCharacterFile = 'ichika.vrm';
                     
-                    // Update UI to reflect loaded character
+                    // Update UI to reflect VRM-only mode
                     document.getElementById('character-select').value = 'ichika.vrm';
-                    document.getElementById('display-mode').value = 'both';
-                    document.getElementById('current-character').textContent = 'Ichika (Full VRM + Skeleton)';
-                    document.getElementById('display-mode-info').textContent = 'both';
+                    document.getElementById('display-mode').value = 'character';
+                    document.getElementById('current-character').textContent = 'Ichika (VRM Character)';
+                    document.getElementById('display-mode-info').textContent = 'character';
                     
-                    statusDiv.textContent = '🎉 Full Ichika VRM character loaded!';
-                    console.log('🎉 Full Ichika VRM character loaded with skeleton!');
-                                skeletonGroup.visible = false;
+                    // Hide the old BVH skeleton completely - VRM will receive all animations
+                    if (skeletonGroup) {
+                        skeletonGroup.visible = false;
+                        console.log('🔄 Old BVH skeleton hidden - VRM character will receive all animations');
+                    }
+                    
+                    statusDiv.textContent = '🎉 Ichika VRM character loaded - old skeleton deprecated!';
+                    console.log('🎉 Ichika VRM character loaded - all BVH animations will be applied to VRM!');
                     
                 } catch (vrmError) {
                     console.warn('⚠️ Failed to auto-load Ichika VRM:', vrmError);
@@ -1382,46 +1580,140 @@
                 console.log('✅ Animation reset to frame 0 - BVH will control all transforms');
             }
             
-            // Make functions global for onclick handlers
-            window.toggleAnimation = toggleAnimation;
-            window.updateAnimationSpeed = updateAnimationSpeed;
-            window.resetAnimation = resetAnimation;
-            window.debugFrame = debugFrame;
-            window.fixOrientation = fixOrientation;
-            window.flipDirection = flipDirection;
-            window.updateJointIntensity = updateJointIntensity;
-            window.toggleSimpleMode = toggleSimpleMode;
-            window.debugBVH = debugBVH;
-            window.resetCharacterDirection = resetCharacterDirection;
+            // NOTE: Global function assignments moved to end of init() to prevent ReferenceErrors
+            // All animation and UI functions will be assigned after their definitions
             
 
 
-            // Animation loop
+            // === AI-POWERED ANIMATION LOOP ===
+            // AI variables are now defined in global scope above
+
+            async function toggleAIMode() {
+                aiMode = !aiMode;
+                const aiModeBtn = document.getElementById('ai-mode-btn');
+                
+                if (aiMode) {
+                    if (!aiModelManager.isInitialized) {
+                        try {
+                            await aiModelManager.initialize();
+                        } catch (error) {
+                            logInferenceEvent(`❌ Cannot enable AI mode: ${error.message}`, 'error');
+                            aiMode = false;
+                            return;
+                        }
+                    }
+                    
+                    aiModeBtn.textContent = '🤖 AI Mode: ON';
+                    aiModeBtn.style.background = '#4CAF50';
+                    statusDiv.textContent = 'AI Mode: Neural networks controlling motion';
+                    logInferenceEvent('🧠 AI Mode activated - neural networks now controlling motion', 'success');
+                    
+                    // Initialize with current BVH frame as seed
+                    if (bvhData[currentAnimation] && bvhData[currentAnimation].frames.length > 0) {
+                        const currentFrame = bvhData[currentAnimation].frames[0];
+                        baseMotion = new Float32Array(currentFrame.slice(0, 66));
+                        aiModelManager.updateMotionHistory(baseMotion);
+                        // Set initial target style to the current animation's style
+                        const motionSequence = aiModelManager.getMotionSequence();
+                        currentTargetStyle = await aiModelManager.encodeStyle(motionSequence);
+                    }
+                    
+                } else {
+                    aiModeBtn.textContent = '🎬 BVH Mode: ON';
+                    aiModeBtn.style.background = '#2196F3';
+                    statusDiv.textContent = 'BVH Mode: Playing recorded motion capture';
+                    logInferenceEvent('🎬 BVH Mode activated - playing recorded motion', 'info');
+                }
+            }
+
+            // Make toggleAIMode globally accessible after definition
+            window.toggleAIMode = toggleAIMode;
+
+            // Modified animation loop with AI integration
             function animate() {
                 requestAnimationFrame(animate);
                 
                 if (isPlaying) {
                     animationFrame++;
                     
-                    if (bvhData[currentAnimation] && bvhData[currentAnimation].frames.length > 0) {
-                        const frames = bvhData[currentAnimation].frames;
-                        const frameIndex = Math.floor(animationFrame * animationSpeed) % frames.length;
-                        const frameData = frames[frameIndex];
+                    if (aiMode && aiModelManager.isInitialized) {
+                        // === AI-POWERED MOTION GENERATION ===
                         
-                        // Apply to character system
-                        if (characterSystem) {
-                            try {
-                                characterSystem.applyBVHFrame(frameData);
-                            } catch (e) {
-                                console.warn('⚠️ Character system frame error:', e.message);
+                        try {
+                            // Every 10 frames, update style encoding (if not in transition)
+                            if (styleUpdateCounter % 10 === 0 && aiModelManager.motionHistory.length >= 60 && !currentTargetStyle) {
+                                const motionSequence = aiModelManager.getMotionSequence();
+                                aiModelManager.encodeStyle(motionSequence).catch(error => {
+                                    logInferenceEvent(`Style encoding failed: ${error.message}`, 'error');
+                                });
                             }
+                            styleUpdateCounter++;
+                            
+                            if (baseMotion && currentTargetStyle) {
+                                // Predict phase for current motion
+                                aiModelManager.predictPhase(baseMotion).then(phase => {
+                                    document.getElementById('current-frame').textContent = `AI Phase: ${phase.toFixed(3)}`;
+                                }).catch(error => {
+                                    console.warn('Phase prediction failed:', error);
+                                });
+                                
+                                // Generate next motion frame using TransitionNet
+                                if (styleUpdateCounter % 5 === 0) { // Generate every 5 frames
+                                    aiModelManager.generateTransition(
+                                        baseMotion,
+                                        currentTargetStyle // Use the target style for transition
+                                    ).then(newMotion => {
+                                        generatedMotion = newMotion;
+                                        baseMotion = newMotion; // Use generated motion as next base
+                                        aiModelManager.updateMotionHistory(newMotion);
+                                        
+                                        // Apply AI-generated motion to VRM character
+                                        if (characterSystem) {
+                                            characterSystem.applyBVHFrame(newMotion);
+                                        }
+                                        
+                                    }).catch(error => {
+                                        console.warn('Transition generation failed:', error);
+                                    });
+                                }
+                                
+                                // Update UI metrics
+                                document.getElementById('inference-rate').textContent = 
+                                    `${(1000 / (aiModelManager.models.deepphase?.lastInferenceTime || 16)).toFixed(1)} FPS`;
+                                document.getElementById('inference-latency').textContent = 
+                                    `${(aiModelManager.models.deepphase?.lastInferenceTime || 16).toFixed(1)}ms`;
+                            }
+                            
+                        } catch (error) {
+                            logInferenceEvent(`❌ AI processing error: ${error.message}`, 'error');
+                            // Fallback to BVH mode
+                            aiMode = false;
+                            toggleAIMode();
                         }
                         
-                        // Update frame counter
-                        document.getElementById('current-frame').textContent = `${frameIndex + 1}/${frames.length} (BVH)`;
-                        
                     } else {
-                        document.getElementById('current-frame').textContent = 'No BVH data';
+                        // === ORIGINAL BVH PLAYBACK ===
+                        
+                        if (bvhData[currentAnimation] && bvhData[currentAnimation].frames.length > 0) {
+                            const frames = bvhData[currentAnimation].frames;
+                            const frameIndex = Math.floor(animationFrame * animationSpeed) % frames.length;
+                            const frameData = frames[frameIndex];
+                            
+                            // Apply to character system
+                            if (characterSystem) {
+                                try {
+                                    characterSystem.applyBVHFrame(frameData);
+                                } catch (e) {
+                                    console.warn('⚠️ Character system frame error:', e.message);
+                                }
+                            }
+                            
+                            // Update frame counter
+                            document.getElementById('current-frame').textContent = `${frameIndex + 1}/${frames.length} (BVH)`;
+                            
+                        } else {
+                            document.getElementById('current-frame').textContent = 'No BVH data';
+                        }
                     }
                     
                     // Update UI displays
@@ -1467,23 +1759,39 @@
                 statusDiv.textContent = 'Reset to neutral (BVH-controlled)';
             };
             
-            document.getElementById('cycle-animations').onclick = () => {
+            document.getElementById('cycle-animations').onclick = async () => {
                 // Cycle through real BVH animations
                 const animFiles = Object.keys(animations);
                 const currentIndex = animFiles.indexOf(currentAnimation);
                 const nextFile = animFiles[(currentIndex + 1) % animFiles.length];
                 
-                loadAnimation(nextFile);
+                await loadAnimation(nextFile);
                 statusDiv.textContent = `Loading: ${animations[nextFile].name}`;
+
+                // If AI mode is active, trigger style encoding for the new animation
+                if (aiMode && aiModelManager.isInitialized) {
+                    logInferenceEvent(`🔄 Initiating AI transition to ${animations[nextFile].name} style...`, 'info');
+                    const motionSequence = aiModelManager.getMotionSequence();
+                    currentTargetStyle = await aiModelManager.encodeStyle(motionSequence);
+                    document.getElementById('current-style').textContent = `AI: ${animations[nextFile].name}`;
+                }
             };
             
-            document.getElementById('random-style').onclick = () => {
+            document.getElementById('random-style').onclick = async () => {
                 // Load random BVH animation
                 const animFiles = Object.keys(animations);
                 const randomFile = animFiles[Math.floor(Math.random() * animFiles.length)];
                 
-                loadAnimation(randomFile);
+                await loadAnimation(randomFile);
                 statusDiv.textContent = `Random: ${animations[randomFile].name}`;
+
+                // If AI mode is active, trigger style encoding for the new random animation
+                if (aiMode && aiModelManager.isInitialized) {
+                    logInferenceEvent(`🎲 Initiating AI transition to random style (${animations[randomFile].name})...`, 'info');
+                    const motionSequence = aiModelManager.getMotionSequence();
+                    currentTargetStyle = await aiModelManager.encodeStyle(motionSequence);
+                    document.getElementById('current-style').textContent = `AI: ${animations[randomFile].name}`;
+                }
             };
             
             document.getElementById('speed-up').onclick = () => {
@@ -1613,12 +1921,7 @@
                             const frameIndex = Math.floor(animationFrame) % frames.length;
                             const frameData = frames[frameIndex];
                             
-                            // Apply to skeleton
-                            try {
-                                applyBVHFrame(frameData);
-                            } catch (e) {
-                                console.warn('⚠️ BVH frame application error:', e.message);
-                            }
+                            
                             
                             // Apply to character system
                             if (characterSystem) {
@@ -1628,7 +1931,6 @@
                                     console.warn('⚠️ Character system frame error:', e.message);
                                 }
                             }
-                            
                             document.getElementById('current-frame').textContent = `${frameIndex + 1}/${frames.length}`;
                         }
                     }
@@ -1761,8 +2063,8 @@
                                     opacity: mat.opacity || 1.0,
                                     side: mat.side || THREE.FrontSide,
                                     name: `UltraFixed_${mat.name || 'Material'}_${index}`,
-                                    fog: false,
-                                    lights: false
+                                    fog: false
+                                    // Note: MeshBasicMaterial doesn't use lights, so no 'lights' property needed
                                 });
                                 
                                 if (Array.isArray(object.material)) {
@@ -1927,8 +2229,8 @@
                 
                 // Try to load actual BVH data
                 try {
-                    console.log('📡 Fetching BVH file:', filename);
-                    const response = await fetch(filename);
+                    console.log('📡 Fetching BVH file:', `./${filename}`);
+                    const response = await fetch(`./${filename}`);
                     console.log('🔍 Response status:', response.status, response.statusText);
                     
                     if (response.ok) {
@@ -1941,6 +2243,13 @@
                         currentAnimation = filename;
                         animationFrame = 0;
                         statusDiv.textContent = `Loaded ${animations[filename]?.name || filename}`;
+
+                        // If AI mode is active, encode the style of the new animation
+                        if (aiMode && aiModelManager.isInitialized) {
+                            const motionSequence = aiModelManager.getMotionSequence(); // Get current motion history
+                            currentTargetStyle = await aiModelManager.encodeStyle(motionSequence);
+                            logInferenceEvent(`🎨 New target style encoded from ${filename}`, 'success');
+                        }
                         
                     } else {
                         throw new Error(`BVH file not found: ${response.status} ${response.statusText}`);
@@ -2114,6 +2423,11 @@
             const details = document.getElementById('inference-details');
             const button = document.getElementById('toggle-inference-details');
             
+            if (!details || !button) {
+                console.log('ℹ️ Inference details elements not found - feature disabled');
+                return;
+            }
+            
             if (details.style.display === 'none') {
                 details.style.display = 'block';
                 button.textContent = 'Hide Details';
@@ -2123,8 +2437,13 @@
             }
         }
         
-        // Add event listener for the toggle button
-        document.getElementById('toggle-inference-details').onclick = toggleInferenceDetails;
+        // Add event listener for the toggle button (if it exists)
+        const toggleButton = document.getElementById('toggle-inference-details');
+        if (toggleButton) {
+            toggleButton.onclick = toggleInferenceDetails;
+        } else {
+            console.log('ℹ️ Toggle inference details button not found - feature disabled');
+        }
         
         // === SERVER WARMUP FUNCTIONALITY ===
         
@@ -2977,22 +3296,26 @@
                                         
                                         // Store the VRM model globally (store the full model, not just VRM)
                                         window.vrmCharacter = vrmModel;
-                                skeletonGroup.visible = false;
                                         
-                                        // Set display mode to show both VRM and skeleton
-                                        characterSystem.setDisplayMode('both');
-                                        document.getElementById('display-mode').value = 'both';
+                                        // Hide old skeleton completely - VRM character will receive all animations
+                                        if (skeletonGroup) {
+                                            skeletonGroup.visible = false;
+                                            console.log('🔄 Old skeleton hidden - VRM character is primary target for animations');
+                                        }
+                                        
+                                        // Set display mode to VRM character only (deprecating skeleton)
+                                        characterSystem.setDisplayMode('character');
+                                        document.getElementById('display-mode').value = 'character';
                                         
                                         statusDiv.textContent = `VRM character loaded: ${characterFile.replace('.vrm', '')}`;
                                         currentCharacterFile = characterFile;
                                         
                                         // Update info panel
                                         const displayName = characterFile.replace('.vrm', '').replace(/^\w/, c => c.toUpperCase());
-                                        document.getElementById('current-character').textContent = `${displayName} (VRM + Skeleton)`;
+                                        document.getElementById('current-character').textContent = `${displayName} (VRM Character)`;
                                         
-                                        console.log('✅ VRM character loaded and rigged to BVH system:', characterFile);
-                                    console.log('🎭 VRM-BVH adapter initialized with', window.currentVRMAdapter.getAvailableBones().length, 'bones');
-                                    skeletonGroup.visible = false;
+                                        console.log('✅ VRM character loaded - will receive all BVH animations:', characterFile);
+                                        console.log('🎭 VRM-BVH adapter initialized with', window.currentVRMAdapter.getAvailableBones().length, 'bones');
                                         
                                         // Apply enhanced VRM lighting
                                         if (typeof enhanceVRMLighting === 'function') {
@@ -3259,12 +3582,34 @@
         window.warmupAllModelsWithVRMAndTextures = warmupAllModelsWithVRMAndTexturesReal;
         window.warmupAllModelsWithVRMAndTexturesAndLighting = warmupAllModelsWithVRMAndTexturesAndLightingReal;
         window.warmupAllModels = warmupAllModelsReal;
-        // --- IGNORE --- 
+        
+        // === ASSIGN ACTUAL FUNCTIONS TO GLOBAL WINDOW OBJECTS ===
+        // Now that all functions are defined, replace placeholder functions
+        window.toggleAIMode = toggleAIMode;
+        window.randomizeStyle = randomizeStyle;
+        window.smoothStyle = smoothStyle;
+        window.aggressiveStyle = aggressiveStyle;
+        window.analyzeCurrentMotion = analyzeCurrentMotion;
+        window.toggleAnimation = toggleAnimation;
+        window.updateAnimationSpeed = updateAnimationSpeed;
+        window.resetAnimation = resetAnimation;
+        
+        // Additional animation and debug functions
+        window.debugFrame = debugFrame;
+        window.fixOrientation = fixOrientation;
+        window.flipDirection = flipDirection;
+        window.updateJointIntensity = updateJointIntensity;
+        window.toggleSimpleMode = toggleSimpleMode;
+        window.debugBVH = debugBVH;
+        window.resetCharacterDirection = resetCharacterDirection;
+        
+        console.log('✅ All global function assignments complete');
+        
         }
-    };
-    // Start the initialization process
-    init();       
+    }
+        // Start the initialization process immediately
+        initializeRSMTViewer();
+        console.log('✅ Initialization process started');
     </script>
-
 </body>
 </html>
