@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RSMT Motion Visualization - Modern (r177)</title>
+    
+    <!-- Import Map for Module Resolution -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.177.0/build/three.module.js",
+            "three/": "https://cdn.jsdelivr.net/npm/three@0.177.0/",
+            "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.0.6/lib/three-vrm.module.js"
+        }
+    }
+    </script>
     <style>
         body {
             margin: 0;
@@ -251,6 +262,45 @@
                 </div>
             </div>
 
+            <!-- Character & Environment Controls -->
+            <div class="controls" style="margin-top: 15px; padding: 15px; background: rgba(100, 0, 200, 0.1); border-radius: 8px; border: 1px solid #a855f7;">
+                <h3 style="margin: 0 0 10px 0; color: #a855f7;">🎭 Character & Environment</h3>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <select id="character-select" style="padding: 8px; border-radius: 4px; background: #333; color: white; border: 1px solid #a855f7;">
+                        <option value="">Select Character</option>
+                        <option value="kaede.vrm">Kaede (School Girl)</option>
+                        <option value="ichika.vrm" selected>Ichika (Student)</option>
+                        <option value="buny.vrm">Buny (Teacher)</option>
+                    </select>
+                    
+                    <select id="display-mode" style="padding: 8px; border-radius: 4px; background: #333; color: white; border: 1px solid #a855f7;">
+                        <option value="textured_skeleton" selected>Textured Skeleton</option>
+                        <option value="skeleton">Skeleton Only</option>
+                        <option value="character">Character Only</option>
+                        <option value="both">Skeleton + Character</option>
+                    </select>
+                    
+                    <button onclick="toggleClassroom()" style="padding: 8px 16px; background: #a855f7; color: white; border: none; border-radius: 4px; cursor: pointer;">🏫 Toggle Classroom</button>
+                    <button onclick="resetCharacterPosition()" style="padding: 8px 16px; background: #e11d48; color: white; border: none; border-radius: 4px; cursor: pointer;">↺ Reset Position</button>
+                    <button onclick="initTexturedSkeleton()" style="padding: 8px 16px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;">🎨 Apply Texture</button>
+                    <button onclick="initBasicTexturedSkeleton()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">🎯 Basic Texture</button>
+                    <button onclick="testImports()" style="padding: 8px 16px; background: #8b5cf6; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 Test Imports</button>
+                    
+                    <select id="camera-mode" style="padding: 8px; border-radius: 4px; background: #333; color: white; border: 1px solid #a855f7;">
+                        <option value="free">Free Camera</option>
+                        <option value="follow">Follow Character</option>
+                        <option value="front">Front View</option>
+                        <option value="side">Side View</option>
+                        <option value="classroom">Classroom View</option>
+                        <option value="overhead">Overhead View</option>
+                        <option value="close">Close-up</option>
+                    </select>
+                    
+                    <button onclick="focusOnFace()" style="padding: 8px 16px; background: #06b6d4; color: white; border: none; border-radius: 4px; cursor: pointer;">👤 Focus Face</button>
+                    <button onclick="toggleFacialExpressions()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">😊 Toggle Expressions</button>
+                </div>
+            </div>
+
 
 
             <div id="status" class="status">Ready</div>
@@ -286,6 +336,22 @@
                     <span>Bone Connections:</span>
                     <span id="bone-count">13</span>
                 </div>
+                <div class="metric">
+                    <span>Current Character:</span>
+                    <span id="current-character">None</span>
+                </div>
+                <div class="metric">
+                    <span>Display Mode:</span>
+                    <span id="display-mode-info">Skeleton</span>
+                </div>
+                <div class="metric">
+                    <span>Classroom:</span>
+                    <span id="classroom-status">Hidden</span>
+                </div>
+                <div class="metric">
+                    <span>Camera Mode:</span>
+                    <span id="camera-mode-info">Free</span>
+                </div>
             </div>
             
             <!-- Animation Controls -->
@@ -319,6 +385,15 @@
 
     <!-- ONNX Runtime Web with WebGPU support -->
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.0/dist/ort.webgpu.min.js"></script>
+
+    <!-- Character System Components -->
+    <script src="./js/VRMBVHAdapter.js"></script>
+    <script src="./js/FacialExpressionSystem.js"></script>
+    <script src="./js/AnimationBlender.js"></script>
+    <script src="./js/ClassroomCameraController.js"></script>
+    <script src="./js/VRMMaterialExtractor.js"></script>
+    <script src="./js/ClassroomEnvironment.js"></script>
+    <script src="./js/EnhancedCharacterSystem.js"></script>
 
     <script type="module">
         console.log('🚀 Starting Modern RSMT Viewer with ES Modules...');
@@ -359,6 +434,70 @@
         window.warmupTransitionNet = function() { console.log('Warmup functions not ready yet'); };
         window.warmupAllModels = function() { console.log('Warmup functions not ready yet'); };
         window.checkONNXRuntimeSetup = function() { console.log('checkONNXRuntimeSetup not ready yet'); };
+        
+        // Character System Placeholders
+        window.toggleClassroom = function() { console.log('Character system not ready yet'); };
+        window.resetCharacterPosition = function() { console.log('Character system not ready yet'); };
+        window.focusOnFace = function() { console.log('Character system not ready yet'); };
+        window.toggleFacialExpressions = function() { console.log('Character system not ready yet'); };
+        window.loadSelectedCharacter = function() { console.log('Character system not ready yet'); };
+        window.changeDisplayMode = function() { console.log('Character system not ready yet'); };
+        window.setCameraMode = function() { console.log('Character system not ready yet'); };
+        window.initTexturedSkeleton = function() { console.log('Character system not ready yet'); };
+        window.initBasicTexturedSkeleton = function() { console.log('Character system not ready yet'); };
+        window.testImports = function() { console.log('Character system not ready yet'); };
+        
+        // Test function to verify modules are loaded
+        window.testModules = function() {
+            console.log('Testing module availability...');
+            console.log('VRMMaterialExtractor:', window.VRMMaterialExtractor ? '✅ Available' : '❌ Missing');
+            console.log('ClassroomEnvironment:', window.ClassroomEnvironment ? '✅ Available' : '❌ Missing');
+            console.log('EnhancedCharacterSystem:', window.EnhancedCharacterSystem ? '✅ Available' : '❌ Missing');
+            console.log('THREE.js:', window.THREE ? '✅ Available' : '❌ Missing');
+            console.log('THREELoaders.GLTFLoader:', window.THREELoaders?.GLTFLoader ? '✅ Available' : '❌ Missing');
+            console.log('THREELoaders.VRMLoaderPlugin:', window.THREELoaders?.VRMLoaderPlugin ? '✅ Available' : '❌ Missing');
+            return 'Module test complete - check console for details';
+        };
+        
+        // Advanced diagnostics function
+        window.fullDiagnostics = async function() {
+            console.log('=== FULL MODULE DIAGNOSTICS ===');
+            console.log('1. Basic availability:');
+            console.log('   THREE.js:', !!window.THREE);
+            console.log('   THREE.GLTFLoader:', !!window.THREE?.GLTFLoader);
+            console.log('   VRMLoaderPlugin:', !!window.VRMLoaderPlugin);
+            
+            console.log('2. Import map support:');
+            console.log('   Import map supported:', HTMLScriptElement.supports ? HTMLScriptElement.supports('importmap') : 'Unknown');
+            
+            console.log('3. Manual import tests:');
+            try {
+                const threeTest = await import('three');
+                console.log('   Direct THREE import: ✅ Success');
+            } catch (e) {
+                console.log('   Direct THREE import: ❌ Failed -', e.message);
+            }
+            
+            try {
+                const gltfTest = await import('three/examples/jsm/loaders/GLTFLoader.js');
+                console.log('   GLTFLoader import: ✅ Success');
+            } catch (e) {
+                console.log('   GLTFLoader import: ❌ Failed -', e.message);
+            }
+            
+            try {
+                const vrmTest = await import('@pixiv/three-vrm');
+                console.log('   VRM import: ✅ Success');
+            } catch (e) {
+                console.log('   VRM import: ❌ Failed -', e.message);
+            }
+            
+            console.log('4. Browser info:');
+            console.log('   User Agent:', navigator.userAgent);
+            console.log('   ES Modules:', 'import' in window ? 'Supported' : 'Not supported');
+            
+            return 'Full diagnostics complete - check console for details';
+        };
 
 
         // Global variables for animation and BVH data
@@ -376,6 +515,13 @@
         let jointMeshes = {};
         let boneCylinders = [];
         let jointWorldPositions = {};
+        
+        // Character System Variables
+        let characterSystem = null;
+        let cameraController = null;
+        let classroomVisible = false;
+        let facialExpressionsEnabled = true;
+        let currentCharacterFile = null;
         
         // Available BVH animations
         const animations = {
@@ -777,10 +923,137 @@
         try {
             updateLoadingStatus('Importing THREE.js module...');
             
-            // Import THREE.js using ES modules
-            const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.177.0/build/three.module.js');
+            // Import THREE.js using ES modules with import map
+            const THREE = await import('three');
+            
+            // Make THREE globally available for modules
+            window.THREE = THREE;
+            
+            // Create a separate object for loaders since THREE may not be extensible
+            window.THREELoaders = {};
+            
+            // Import additional THREE.js modules
+            updateLoadingStatus('Loading THREE.js extensions...');
+            
+            // Load GLTFLoader using import map
+            try {
+                const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
+                window.THREELoaders.GLTFLoader = GLTFLoader;
+                // Also try to add to THREE if possible
+                try {
+                    window.THREE.GLTFLoader = GLTFLoader;
+                } catch (extensibilityError) {
+                    console.log('THREE object not extensible, using THREELoaders instead');
+                }
+                console.log('✅ GLTFLoader loaded successfully via import map');
+            } catch (error) {
+                console.warn('⚠️ Failed to load GLTFLoader via import map:', error);
+                // Fallback to script tag approach
+                try {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/three@0.177.0/examples/js/loaders/GLTFLoader.js';
+                        script.onload = () => {
+                            window.THREELoaders.GLTFLoader = window.GLTFLoader || window.THREE.GLTFLoader;
+                            console.log('✅ GLTFLoader loaded via script tag fallback');
+                            resolve();
+                        };
+                        script.onerror = () => {
+                            console.warn('⚠️ Failed to load GLTFLoader from CDN');
+                            reject();
+                        };
+                        document.head.appendChild(script);
+                    });
+                } catch (scriptError) {
+                    console.warn('⚠️ Failed to load GLTFLoader, will create basic loader:', scriptError);
+                    // Create a basic GLTF loader fallback
+                    window.THREELoaders.GLTFLoader = class BasicGLTFLoader {
+                        constructor() {
+                            console.log('Using BasicGLTFLoader fallback');
+                        }
+                        register(plugin) {
+                            this.plugins = this.plugins || [];
+                            this.plugins.push(plugin);
+                            return this;
+                        }
+                        load(url, onLoad, onProgress, onError) {
+                            console.warn('BasicGLTFLoader: Attempting to load:', url);
+                            
+                            // Try to use fetch to load the file
+                            fetch(url)
+                                .then(response => {
+                                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                                    return response.arrayBuffer();
+                                })
+                                .then(buffer => {
+                                    // Create a minimal GLTF-like object
+                                    const scene = new window.THREE.Group();
+                                    const gltf = {
+                                        scene: scene,
+                                        animations: [],
+                                        asset: {},
+                                        cameras: [],
+                                        scenes: [scene],
+                                        userData: {}
+                                    };
+                                    
+                                    console.log('BasicGLTFLoader: Created basic scene object');
+                                    if (onLoad) onLoad(gltf);
+                                })
+                                .catch(error => {
+                                    console.error('BasicGLTFLoader failed:', error);
+                                    if (onError) onError(error);
+                                });
+                        }
+                    };
+                }
+            }
+            
+            // Load VRM loader using import map
+            try {
+                const { VRMLoaderPlugin, VRMUtils } = await import('@pixiv/three-vrm');
+                window.THREELoaders.VRMLoaderPlugin = VRMLoaderPlugin;
+                window.THREELoaders.VRMUtils = VRMUtils;
+                // Also try to add to global window if possible
+                try {
+                    window.VRMLoaderPlugin = VRMLoaderPlugin;
+                    window.VRMUtils = VRMUtils;
+                } catch (extensibilityError) {
+                    console.log('Window VRM assignment failed, using THREELoaders instead');
+                }
+                console.log('✅ VRMLoaderPlugin loaded successfully via import map');
+            } catch (error) {
+                console.warn('⚠️ Failed to load VRMLoaderPlugin via import map:', error);
+                // Create diagnostic function
+                window.diagnoseVRMIssue = () => {
+                    console.log('=== VRM Loading Diagnostics ===');
+                    console.log('THREE.js available:', !!window.THREE);
+                    console.log('GLTFLoader available:', !!window.THREELoaders?.GLTFLoader);
+                    console.log('VRMLoaderPlugin available:', !!window.THREELoaders?.VRMLoaderPlugin);
+                    console.log('Import map supported:', HTMLScriptElement.supports ? HTMLScriptElement.supports('importmap') : 'Unknown');
+                    console.log('Browser:', navigator.userAgent);
+                    console.log('THREE object extensible:', Object.isExtensible(window.THREE));
+                };
+                window.diagnoseVRMIssue();
+            }
             
             updateLoadingStatus('THREE.js loaded successfully!');
+            
+            // Update loader status indicator
+            function updateLoaderStatus() {
+                const hasGLTF = !!(window.THREELoaders?.GLTFLoader);
+                const hasVRM = !!(window.THREELoaders?.VRMLoaderPlugin);
+                const status = `Loaders: GLTF ${hasGLTF ? '✅' : '❌'} | VRM ${hasVRM ? '✅' : '❌'}`;
+                console.log('📦', status);
+                
+                // Update any status display if available
+                const statusElement = document.getElementById('loader-status');
+                if (statusElement) {
+                    statusElement.textContent = status;
+                }
+            }
+            
+            updateLoaderStatus();
             
             // Update version info
             document.getElementById('three-version').textContent = THREE.REVISION || 'ES Module';
@@ -1022,6 +1295,43 @@
             // Position camera
             camera.position.set(3, 2, 3);
             camera.lookAt(0, 0.5, 0);
+            
+            updateLoadingStatus('Initializing character system...');
+            
+            // Initialize Enhanced Character System
+            try {
+                characterSystem = new EnhancedCharacterSystem(scene, skeletonGroup);
+                
+                // Initialize textured skeleton in classroom (this does both classroom and texture application)
+                await characterSystem.initializeTexturedSkeletonInClassroom('ichika');
+                
+            // Initialize camera controller
+            // Check if ClassroomCameraController is available before initializing
+            if (typeof window.ClassroomCameraController !== 'undefined') {
+                console.log('🔍 Checking ClassroomCameraController availability:', typeof window.ClassroomCameraController);
+                cameraController = new window.ClassroomCameraController(camera, characterSystem);
+            } else {
+                console.warn('⚠️ ClassroomCameraController not available, skipping camera controller initialization');
+            }
+                
+                console.log('✅ Character system with textured skeleton in classroom initialized');
+                
+                // Set up event listeners for character controls
+                const characterSelect = document.getElementById('character-select');
+                const displayModeSelect = document.getElementById('display-mode');
+                const cameraModeSelect = document.getElementById('camera-mode');
+                
+                characterSelect.addEventListener('change', loadSelectedCharacter);
+                displayModeSelect.addEventListener('change', changeDisplayMode);
+                cameraModeSelect.addEventListener('change', (e) => setCameraMode(e.target.value));
+                
+                // Initialize character control functions
+                initializeCharacterControls();
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize character system:', error);
+                // Continue without character system
+            }
             
             updateLoadingStatus('Starting animation...');
             
@@ -1497,17 +1807,65 @@
 
 
             // Start animation loop and load first animation
-            animate();
+            enhancedAnimate();
             
             // Load default animation
             updateLoadingStatus('Loading default animation...');
             loadAnimation('neutral_reference.bvh');
             
+            // Enhanced animation loop with character system integration
+            function enhancedAnimate() {
+                requestAnimationFrame(enhancedAnimate);
+                
+                if (isPlaying) {
+                    animationFrame += animationSpeed;
+                    
+                    // Apply BVH animation
+                    if (bvhData[currentAnimation] && bvhData[currentAnimation].frames.length > 0) {
+                        const frames = bvhData[currentAnimation].frames;
+                        const frameIndex = Math.floor(animationFrame) % frames.length;
+                        const frameData = frames[frameIndex];
+                        
+                        // Apply to skeleton
+                        applyBVHFrame(frameData);
+                        
+                        // Apply to character system
+                        if (characterSystem) {
+                            characterSystem.applyBVHFrame(frameData);
+                        }
+                        
+                        document.getElementById('current-frame').textContent = `${frameIndex + 1}/${frames.length}`;
+                    }
+                }
+                
+                // Update character system
+                if (characterSystem) {
+                    characterSystem.update();
+                }
+                
+                // Update camera controller
+                if (cameraController) {
+                    cameraController.update();
+                }
+                
+                // Update bones and render
+                updateBones();
+                renderer.render(scene, camera);
+            }
+            
+            // Replace the original animate function with enhanced version
+            if (typeof animate !== 'undefined') {
+                animate = enhancedAnimate;
+            }
+            
+            // Make enhancedAnimate globally accessible
+            window.enhancedAnimate = enhancedAnimate;
+            
             // Hide loading screen
             updateLoadingStatus('Complete!');
             setTimeout(() => {
                 loadingDiv.style.display = 'none';
-                statusDiv.textContent = 'Modern RSMT Viewer Ready! Loading real BVH animations.';
+                statusDiv.textContent = 'Modern RSMT Viewer Ready! Character system loaded.';
             }, 1000);
             
         } catch (error) {
@@ -2267,6 +2625,251 @@
         }
 
 
+        // === CHARACTER SYSTEM CONTROL FUNCTIONS ===
+        
+        function initializeCharacterControls() {
+            console.log('🎭 Initializing character control functions...');
+            
+            // Character management functions
+            window.loadSelectedCharacter = async function() {
+                const select = document.getElementById('character-select');
+                const characterFile = select.value;
+                
+                if (characterFile && characterSystem) {
+                    try {
+                        statusDiv.textContent = `Applying textures: ${characterFile}`;
+                        updateLoadingStatus(`Applying VRM textures: ${characterFile}`);
+                        
+                        // Extract character name for texture application
+                        const characterName = characterFile.replace('.vrm', '');
+                        
+                        // Apply VRM textures to the BVH skeleton
+                        await characterSystem.applyVRMTextureToSkeleton(`./assets/avatars/${characterFile}`);
+                        
+                        // Set display mode to textured skeleton
+                        characterSystem.setDisplayMode('textured_skeleton');
+                        document.getElementById('display-mode').value = 'textured_skeleton';
+                        
+                        statusDiv.textContent = `Textured skeleton: ${characterName}`;
+                        currentCharacterFile = characterFile;
+                        
+                        // Update info panel
+                        const displayName = characterName.replace(/^\w/, c => c.toUpperCase());
+                        document.getElementById('current-character').textContent = `${displayName} (Textured Skeleton)`;
+                        
+                        console.log('✅ Character textures applied to skeleton:', characterFile);
+                        
+                    } catch (error) {
+                        console.error('❌ Failed to apply character textures:', error);
+                        statusDiv.textContent = `Failed to apply textures: ${error.message}`;
+                    }
+                } else if (!characterFile) {
+                    // Reset to default skeleton if no character selected
+                    if (characterSystem) {
+                        characterSystem.setDisplayMode('skeleton');
+                        document.getElementById('display-mode').value = 'skeleton';
+                        statusDiv.textContent = 'Default skeleton mode';
+                        document.getElementById('current-character').textContent = 'Default Skeleton';
+                    }
+                } else {
+                    console.warn('⚠️ Character system not ready');
+                }
+            };
+            
+            window.changeDisplayMode = function() {
+                const select = document.getElementById('display-mode');
+                const mode = select.value;
+                
+                if (characterSystem) {
+                    characterSystem.setDisplayMode(mode);
+                    statusDiv.textContent = `Display mode: ${mode}`;
+                    
+                    // Update info panel
+                    document.getElementById('display-mode-info').textContent = mode;
+                    
+                    console.log('🎭 Display mode changed to:', mode);
+                } else {
+                    console.warn('⚠️ Character system not ready');
+                }
+            };
+            
+            window.toggleClassroom = function() {
+                if (characterSystem) {
+                    const visible = characterSystem.toggleClassroomVisibility();
+                    classroomVisible = visible;
+                    statusDiv.textContent = classroomVisible ? 'Classroom ON' : 'Classroom OFF';
+                    
+                    // Update info panel
+                    document.getElementById('classroom-status').textContent = visible ? 'Visible' : 'Hidden';
+                    
+                    console.log('🏫 Classroom visibility:', visible ? 'ON' : 'OFF');
+                } else {
+                    console.warn('⚠️ Character system not ready');
+                }
+            };
+            
+            window.resetCharacterPosition = function() {
+                if (characterSystem) {
+                    characterSystem.resetCharacterPosition();
+                    statusDiv.textContent = 'Character position reset';
+                    console.log('↺ Character position reset');
+                } else {
+                    console.warn('⚠️ Character system not ready');
+                }
+            };
+            
+            // Camera control functions
+            window.setCameraMode = function(mode) {
+                if (cameraController) {
+                    cameraController.setCameraMode(mode);
+                    statusDiv.textContent = `Camera mode: ${mode}`;
+                    
+                    // Update info panel
+                    document.getElementById('camera-mode-info').textContent = mode;
+                    
+                    console.log('📹 Camera mode changed to:', mode);
+                } else {
+                    console.warn('⚠️ Camera controller not ready');
+                }
+            };
+            
+            window.focusOnFace = function() {
+                if (cameraController) {
+                    cameraController.focusOnFace();
+                    statusDiv.textContent = 'Camera focused on face';
+                    console.log('👤 Camera focused on face');
+                } else {
+                    console.warn('⚠️ Camera controller not ready');
+                }
+            };
+            
+            window.toggleFacialExpressions = function() {
+                facialExpressionsEnabled = !facialExpressionsEnabled;
+                
+                if (characterSystem && characterSystem.facialExpressionSystem) {
+                    if (facialExpressionsEnabled) {
+                        characterSystem.facialExpressionSystem.setEmotion('neutral', 0.2);
+                    } else {
+                        characterSystem.facialExpressionSystem.setEmotion('neutral', 0.0);
+                    }
+                }
+                
+                statusDiv.textContent = `Facial expressions: ${facialExpressionsEnabled ? 'ON' : 'OFF'}`;
+                console.log('😊 Facial expressions:', facialExpressionsEnabled ? 'ON' : 'OFF');
+            };
+            
+            window.testImports = async function() {
+                statusDiv.textContent = 'Testing module imports...';
+                console.log('🔧 Testing module imports manually...');
+                
+                try {
+                    // Test import map imports
+                    console.log('Testing THREE.js import...');
+                    const threeModule = await import('three');
+                    console.log('✅ THREE.js import successful:', !!threeModule);
+                    
+                    console.log('Testing GLTFLoader import...');
+                    const gltfModule = await import('three/examples/jsm/loaders/GLTFLoader.js');
+                    console.log('✅ GLTFLoader import successful:', !!gltfModule.GLTFLoader);
+                    
+                    console.log('Testing VRM import...');
+                    const vrmModule = await import('@pixiv/three-vrm');
+                    console.log('✅ VRM import successful:', !!vrmModule.VRMLoaderPlugin);
+                    
+                    // Test actual VRM loading using our loader structure
+                    console.log('Testing VRM file loading...');
+                    
+                    // Use the loaders from our structure
+                    const GLTFLoader = window.THREELoaders?.GLTFLoader || gltfModule.GLTFLoader;
+                    const VRMLoaderPlugin = window.THREELoaders?.VRMLoaderPlugin || vrmModule.VRMLoaderPlugin;
+                    
+                    const loader = new GLTFLoader();
+                    if (VRMLoaderPlugin) {
+                        loader.register((parser) => new VRMLoaderPlugin(parser));
+                        console.log('VRM plugin registered for test');
+                    }
+                    
+                    loader.load(
+                        './assets/avatars/ichika.vrm',
+                        (gltf) => {
+                            console.log('✅ VRM file loaded successfully:', gltf);
+                            console.log('VRM scene objects:', gltf.scene.children.length);
+                            console.log('VRM userData:', gltf.userData);
+                            statusDiv.textContent = 'All imports working! VRM loaded successfully.';
+                        },
+                        (progress) => {
+                            const percent = (progress.loaded / progress.total * 100).toFixed(1);
+                            console.log('Loading progress:', percent + '%');
+                            statusDiv.textContent = `Loading VRM... ${percent}%`;
+                        },
+                        (error) => {
+                            console.error('❌ VRM loading failed:', error);
+                            statusDiv.textContent = `VRM loading failed: ${error.message}`;
+                        }
+                    );
+                    
+                } catch (error) {
+                    console.error('❌ Import test failed:', error);
+                    statusDiv.textContent = `Import test failed: ${error.message}`;
+                }
+            };
+            
+            window.initBasicTexturedSkeleton = async function() {
+                if (characterSystem) {
+                    try {
+                        statusDiv.textContent = 'Creating basic textured skeleton...';
+                        console.log('🎯 Creating basic textured skeleton without VRM...');
+                        
+                        // Load classroom first
+                        await characterSystem.loadClassroomEnvironment();
+                        
+                        // Create basic textured skeleton without VRM loading
+                        if (characterSystem.materialExtractor) {
+                            characterSystem.materialExtractor.createDefaultMaterials();
+                            characterSystem.materialExtractor.applyMaterialsToSkeleton(characterSystem.bvhSkeleton);
+                        } else {
+                            // Create material extractor with default materials
+                            characterSystem.materialExtractor = new window.VRMMaterialExtractor();
+                            characterSystem.materialExtractor.createDefaultMaterials();
+                            characterSystem.materialExtractor.applyMaterialsToSkeleton(characterSystem.bvhSkeleton);
+                        }
+                        
+                        characterSystem.setDisplayMode('textured_skeleton');
+                        
+                        statusDiv.textContent = 'Basic textured skeleton created successfully!';
+                        console.log('✅ Basic textured skeleton complete');
+                    } catch (error) {
+                        console.error('❌ Failed to create basic textured skeleton:', error);
+                        statusDiv.textContent = `Failed to create basic skeleton: ${error.message}`;
+                    }
+                } else {
+                    console.warn('⚠️ Character system not ready');
+                    statusDiv.textContent = 'Character system not ready';
+                }
+            };
+            
+            window.initTexturedSkeleton = async function() {
+                if (characterSystem) {
+                    try {
+                        statusDiv.textContent = 'Initializing textured skeleton in classroom...';
+                        console.log('🎨 Manually initializing textured skeleton...');
+                        
+                        await characterSystem.initializeTexturedSkeletonInClassroom('ichika');
+                        
+                        statusDiv.textContent = 'Textured skeleton initialized successfully!';
+                        console.log('✅ Textured skeleton initialization complete');
+                    } catch (error) {
+                        console.error('❌ Failed to initialize textured skeleton:', error);
+                        statusDiv.textContent = `Failed to initialize: ${error.message}`;
+                    }
+                } else {
+                    console.warn('⚠️ Character system not ready');
+                    statusDiv.textContent = 'Character system not ready';
+                }
+            };
+            
+            console.log('✅ Character control functions initialized');
+        }
         
         // Make warmup functions globally accessible
         window.testServerConnection = testServerConnectionReal;
