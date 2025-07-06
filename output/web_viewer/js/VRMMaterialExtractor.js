@@ -191,6 +191,18 @@ class VRMMaterialExtractor {
     validateMaterial(material) {
         if (!material) return null;
         
+        // If it's a VRM material, replace it immediately
+        if (material.type && (material.type.includes('VRM') || material.type.includes('MToon'))) {
+            console.log(`Replacing problematic ${material.type} material with MeshBasicMaterial`);
+            return new window.THREE.MeshBasicMaterial({
+                color: material.color || new window.THREE.Color(0xFFFFFF),
+                map: material.map || null,
+                transparent: material.transparent || false,
+                opacity: material.opacity !== undefined ? material.opacity : 1.0,
+                side: window.THREE.FrontSide
+            });
+        }
+        
         // Ensure color is valid
         if (material.color && !material.color.isColor) {
             if (typeof material.color === 'number') {
@@ -213,24 +225,15 @@ class VRMMaterialExtractor {
             }
         }
         
-        // Validate uniforms if present
+        // Validate uniforms if present - if we find any, replace the material
         if (material.uniforms) {
-            Object.keys(material.uniforms).forEach(key => {
-                const uniform = material.uniforms[key];
-                if (uniform && uniform.value !== undefined) {
-                    // Check for Vector3 uniforms
-                    if (uniform.value && uniform.value.isVector3) {
-                        if (isNaN(uniform.value.x) || isNaN(uniform.value.y) || isNaN(uniform.value.z)) {
-                            uniform.value.set(0, 0, 0);
-                        }
-                    }
-                    // Check for Color uniforms
-                    if (uniform.value && uniform.value.isColor) {
-                        if (isNaN(uniform.value.r) || isNaN(uniform.value.g) || isNaN(uniform.value.b)) {
-                            uniform.value.setRGB(1, 1, 1);
-                        }
-                    }
-                }
+            console.log('Material has uniforms - replacing with MeshBasicMaterial for safety');
+            return new window.THREE.MeshBasicMaterial({
+                color: material.color || new window.THREE.Color(0xFFFFFF),
+                map: material.map || null,
+                transparent: material.transparent || false,
+                opacity: material.opacity !== undefined ? material.opacity : 1.0,
+                side: window.THREE.FrontSide
             });
         }
         

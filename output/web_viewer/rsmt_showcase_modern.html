@@ -510,57 +510,16 @@
         };
         
         // Force material update and compilation for all objects in the scene
-    function forceMaterialUpdateAndCompile() {
-        console.log('🔄 Forcing material update and compilation for all scene objects...');
-        scene.traverse((object) => {
-            if (object.isMesh) {
-                if (Array.isArray(object.material)) {
-                    object.material.forEach(mat => {
-                        if (mat.isMaterial) {
-                            mat.needsUpdate = true;
-                            if (mat.map) mat.map.needsUpdate = true;
-                            if (mat.emissiveMap) mat.emissiveMap.needsUpdate = true;
-                            if (mat.normalMap) mat.normalMap.needsUpdate = true;
-                            if (mat.roughnessMap) mat.roughnessMap.needsUpdate = true;
-                            if (mat.metalnessMap) mat.metalnessMap.needsUpdate = true;
-                            if (mat.aoMap) mat.aoMap.needsUpdate = true;
-                            if (mat.lightMap) mat.lightMap.needsUpdate = true;
-                            if (mat.alphaMap) mat.alphaMap.needsUpdate = true;
-                            if (mat.envMap) mat.envMap.needsUpdate = true;
-                        }
-                    });
-                } else if (object.material && object.material.isMaterial) {
-                    object.material.needsUpdate = true;
-                    if (object.material.map) object.material.map.needsUpdate = true;
-                    if (object.material.emissiveMap) object.material.emissiveMap.needsUpdate = true;
-                    if (object.material.normalMap) object.material.normalMap.needsUpdate = true;
-                    if (object.material.roughnessMap) object.material.roughnessMap.needsUpdate = true;
-                    if (object.material.metalnessMap) object.material.metalnessMap.needsUpdate = true;
-                    if (object.material.aoMap) object.material.aoMap.needsUpdate = true;
-                    if (object.material.lightMap) object.material.lightMap.needsUpdate = true;
-                    if (object.material.alphaMap) object.material.alphaMap.needsUpdate = true;
-                    if (object.material.envMap) object.material.envMap.needsUpdate = true;
-                }
-            }
-        });
-        try {
-            renderer.compile(scene, camera);
-            console.log('✅ Scene compilation complete.');
-        } catch (e) {
-            console.warn('Scene compilation failed:', e.message);
-        }
-    }
-
-    // Initialize the main application
-    async function initializeRSMTViewer() {
-        console.log('🔄 Initializing RSMT Viewer...');
         
-        // Wait for THREE.js to load
-        if (!window.THREE) {
-            console.error('❌ THREE.js not loaded');
-            updateLoadingStatus('Error: THREE.js not loaded');
-            return;
-        }
+        async function initializeRSMTViewer() {
+            console.log('🔄 Initializing RSMT Viewer...');
+            
+            // Wait for THREE.js to load
+            if (!window.THREE) {
+                console.error('❌ THREE.js not loaded');
+                updateLoadingStatus('Error: THREE.js not loaded');
+                return;
+            }
         
         console.log('✅ THREE.js loaded successfully');
         
@@ -640,6 +599,10 @@
             await classroomEnvironment.loadClassroom();
             console.log('✅ Environment loaded');
             
+            // Now that THREE.js is loaded and environment is set up, call the main initialization
+            console.log('🔧 Calling initializeRSMTViewer() after THREE.js setup...');
+            await initializeRSMTViewer();
+            
             // Finalize loading
             loadingDiv.style.display = 'none';
             container.style.display = 'block';
@@ -654,11 +617,7 @@
         }
     }
 
-    // Call initialization function when the window loads
-    window.onload = initializeRSMTViewer;
-
-    // Call initialization function when the window loads
-    window.onload = initializeRSMTViewer;
+    // Note: initializeRSMTViewer() will be called after THREE.js loads in the main script section
 
     const loadingDiv = document.getElementById('loading');
         const loadingStatus = document.getElementById('loading-status');
@@ -1034,11 +993,6 @@
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.2;
 
-            // Assertions for debugging uniform3fv error
-            console.assert(scene.background instanceof THREE.Color, 'scene.background is not a THREE.Color');
-            console.assert(camera.position instanceof THREE.Vector3, 'camera.position is not a THREE.Vector3');
-            console.assert(typeof renderer.toneMappingExposure === 'number', 'renderer.toneMappingExposure is not a number');
-            
             // Add comprehensive error handling
             
             // Handle WebGL context loss
@@ -1080,9 +1034,6 @@
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            const bgTexture = new THREE.CanvasTexture(canvas);
-            scene.background = bgTexture;
-            // Ensure scene.background is a THREE.Color for compatibility with some shaders
             scene.background = new THREE.Color(0x1a1a2e);
             
             // Professional anime character lighting setup
@@ -1758,8 +1709,56 @@
                     }
                 });
                 
+                // Also force update all materials
+                if (typeof window.forceMaterialUpdateAndCompile === 'function') {
+                    window.forceMaterialUpdateAndCompile();
+                }
+                
                 console.log(`🚨 Emergency fix: Replaced ${replacedCount} problematic materials`);
                 return `Emergency fix applied to ${replacedCount} materials`;
+            };
+            
+            // Global nuclear material fix - replaces EVERYTHING with safe materials
+            window.nuclearMaterialFix = function() {
+                console.log('☢️ Nuclear material fix - replacing ALL materials with basic ones...');
+                
+                if (!scene) {
+                    console.log('❌ No scene available');
+                    return 'No scene available';
+                }
+                
+                let replacedCount = 0;
+                scene.traverse((object) => {
+                    if (object.isMesh && object.material) {
+                        const materials = Array.isArray(object.material) ? object.material : [object.material];
+                        
+                        materials.forEach((material, index) => {
+                            // Replace EVERY material with a safe one
+                            const newMaterial = new THREE.MeshBasicMaterial({
+                                color: new THREE.Color(0xCCCCCC), // Neutral gray
+                                transparent: false,
+                                opacity: 1.0,
+                                side: THREE.FrontSide
+                            });
+                            
+                            if (Array.isArray(object.material)) {
+                                object.material[index] = newMaterial;
+                            } else {
+                                object.material = newMaterial;
+                            }
+                            replacedCount++;
+                        });
+                        
+                        // Ensure object is ultra-safe
+                        object.castShadow = false;
+                        object.receiveShadow = false;
+                        object.frustumCulled = true;
+                        object.visible = true;
+                    }
+                });
+                
+                console.log(`☢️ Nuclear fix: Replaced ${replacedCount} materials with basic ones`);
+                return `Nuclear fix applied to ${replacedCount} materials`;
             };
             
             // Global material validation function
@@ -2237,11 +2236,6 @@
                     
                     // Safe rendering with error handling
                     try {
-                        // Assertions for debugging uniform3fv error right before render
-                        console.assert(scene.background instanceof THREE.Color, 'scene.background is not a THREE.Color before render');
-                        console.assert(camera.position instanceof THREE.Vector3, 'camera.position is not a THREE.Vector3 before render');
-                        console.assert(typeof renderer.toneMappingExposure === 'number', 'renderer.toneMappingExposure is not a number before render');
-
                         // Validate materials before rendering if we've had errors
                         if (consecutiveErrors > 0) {
                             scene.traverse((object) => {
@@ -2301,15 +2295,33 @@
                         
                         // Try different fix strategies based on error count
                         if (consecutiveErrors < maxConsecutiveErrors) {
-                            if (consecutiveErrors === 1 && renderError.message.includes('uniform3fv')) {
-                                console.log('🔧 Attempting to fix VRM shader issues...');
+                            if ((consecutiveErrors === 1 || consecutiveErrors === 2 || consecutiveErrors === 3) && renderError.message.includes('uniform3fv')) {
+                                console.log(`🔧 Attempting to fix VRM shader issues on error #${consecutiveErrors}...`);
                                 try {
                                     if (typeof window.fixVRMShaders === 'function') {
+                                        console.log('🔧 Calling fixVRMShaders...');
                                         window.fixVRMShaders();
-                                    } else if (typeof window.fixVRMShadersEarly === 'function') {
+                                    } else {
+                                        console.log('❌ fixVRMShaders not available');
+                                    }
+                                    
+                                    if (typeof window.fixVRMShadersEarly === 'function') {
+                                        console.log('🔧 Calling fixVRMShadersEarly...');
                                         window.fixVRMShadersEarly();
                                     } else {
-                                        console.warn('⚠️ No shader fix functions available');
+                                        console.log('❌ fixVRMShadersEarly not available');
+                                    }
+                                    
+                                    if (typeof window.emergencyMaterialFix === 'function') {
+                                        console.log('🚨 Calling emergencyMaterialFix...');
+                                        window.emergencyMaterialFix();
+                                    } else {
+                                        console.log('❌ emergencyMaterialFix not available');
+                                    }
+                                    
+                                    if (consecutiveErrors >= 2 && typeof window.nuclearMaterialFix === 'function') {
+                                        console.log('🔥 Applying nuclear material fix...');
+                                        window.nuclearMaterialFix();
                                     }
                                 } catch (fixError) {
                                     console.error('❌ Shader fix error:', fixError);
@@ -2329,7 +2341,12 @@
                                 if (typeof window.emergencyMaterialFix === 'function') {
                                     window.emergencyMaterialFix();
                                 }
-                            } else if (consecutiveErrors <= 6) {
+                            } else if (consecutiveErrors === 6 || consecutiveErrors === 7) {
+                                console.log('☢️ Attempting nuclear material fix...');
+                                if (typeof window.nuclearMaterialFix === 'function') {
+                                    window.nuclearMaterialFix();
+                                }
+                            } else if (consecutiveErrors <= 8) {
                                 console.log('🔧 Attempting to reset camera...');
                                 if (cameraController) {
                                     cameraController.setCameraMode('front');
@@ -3185,14 +3202,14 @@
                 await aiModelManager.initialize();
             // Priority 1: Apply to VRM character if available
             if (window.currentVRMAdapter && window.currentVRMAdapter.vrmModel) {
-                    if (animationFrame % 120 === 0) { // Every 2 seconds at 60fps
-                        console.log('� Applying BVH frame to VRM character...');
-                        console.log('Frame data length:', frameData.length);
-                        console.log('VRM adapter available:', !!window.currentVRMAdapter);
-                        console.log('VRM scene in global scene:', scene.children.some(child => child === window.currentVRMAdapter.vrmScene));
-                        window.currentVRMAdapter.applyBVHFrame(frameData);
-                    }
+                if (animationFrame % 120 === 0) { // Every 2 seconds at 60fps
+                    console.log('🎭 Applying BVH frame to VRM character...');
+                    console.log('Frame data length:', frameData.length);
+                    console.log('VRM adapter available:', !!window.currentVRMAdapter);
+                    console.log('VRM scene in global scene:', scene.children.some(child => child === window.currentVRMAdapter.vrmScene));
+                    window.currentVRMAdapter.applyBVHFrame(frameData);
                 }
+            }
                 updateModelStatus('deephase', 'Ready', 'WebGPU loaded successfully');
                 updateModelStatus('stylevae', 'Ready', 'WebGPU loaded successfully');
                 updateModelStatus('transitionnet', 'Ready', 'WebGPU loaded successfully');
@@ -3214,20 +3231,15 @@
                 if (characterSystem) {
                     if (characterSystem.vrmCharacter) {
                         characterSystem.setDisplayMode('character');
-                                // Hide VRM character if possible
-                                if (window.currentVRMAdapter.vrmScene) {
-                                    window.currentVRMAdapter.vrmScene.visible = false;
-                                }
                         statusDiv.textContent = 'Full VRM character not loaded';
                         return '❌ Full VRM character not available';
                     }
                 } else {
                     return '❌ Character system not ready';
                 }
-                                // Show VRM character
-                                if (window.currentVRMAdapter.vrmScene) {
-                                    window.currentVRMAdapter.vrmScene.visible = true;
-                                }als = function() {
+            };
+            
+            window.runMaterialDiagnostics = function() {
                 console.log('🔍 Running comprehensive material diagnostics...');
                 
                 // Check if scene exists
@@ -3954,46 +3966,80 @@
             };
             
             console.log('✅ Character control functions initialized');
-        // Initialize character control functions
-        initCharacterControlFunctions();    
+            
+            // Assign functions defined inside initializeRSMTViewer to global scope
+            try {
+                console.log('🔄 Assigning internal functions to global scope...');
+                
+                // Functions defined inside this function
+                if (typeof toggleAnimation === 'function') window.toggleAnimation = toggleAnimation;
+                if (typeof updateAnimationSpeed === 'function') window.updateAnimationSpeed = updateAnimationSpeed;
+                if (typeof resetAnimation === 'function') window.resetAnimation = resetAnimation;
+                if (typeof debugFrame === 'function') window.debugFrame = debugFrame;
+                if (typeof fixOrientation === 'function') window.fixOrientation = fixOrientation;
+                if (typeof flipDirection === 'function') window.flipDirection = flipDirection;
+                if (typeof updateJointIntensity === 'function') window.updateJointIntensity = updateJointIntensity;
+                if (typeof toggleSimpleMode === 'function') window.toggleSimpleMode = toggleSimpleMode;
+                if (typeof debugBVH === 'function') window.debugBVH = debugBVH;
+                if (typeof resetCharacterDirection === 'function') window.resetCharacterDirection = resetCharacterDirection;
+                
+                console.log('✅ Internal functions assigned to global scope');
+            } catch (error) {
+                console.error('❌ Error assigning internal functions to global scope:', error);
+            }
+            
+            // Call function to assign real implementations to global functions
+            assignFunctionsToGlobalScope();
+        }
         
-        // Make warmup functions globally accessible
+        // === END OF initializeRSMTViewer FUNCTION ===
+        
+        // Function to assign actual implementations to global functions
+        function assignFunctionsToGlobalScope() {
+            console.log('🔄 Assigning real function implementations to global scope...');
+            
+            try {
+                // Assign functions that are defined globally
+                if (typeof randomizeStyle === 'function') window.randomizeStyle = randomizeStyle;
+                if (typeof smoothStyle === 'function') window.smoothStyle = smoothStyle;
+                if (typeof aggressiveStyle === 'function') window.aggressiveStyle = aggressiveStyle;
+                if (typeof analyzeCurrentMotion === 'function') window.analyzeCurrentMotion = analyzeCurrentMotion;
+                
+                // Note: Functions defined inside initializeRSMTViewer (like debugFrame, toggleAnimation, etc.)
+                // are already assigned to global scope inside that function
+                
+                console.log('✅ Real function implementations assigned to global scope');
+            } catch (error) {
+                console.error('❌ Error assigning real functions to global scope:', error);
+            }
+        }
+        
+        // Make warmup functions globally accessible (these are already defined globally)
         window.testServerConnection = testServerConnectionReal;
         window.warmupStyleVAE = warmupStyleVAEReal;
         window.warmupTransitionNet = warmupTransitionNetReal;
         window.warmupAllModels = warmupAllModelsReal;
-        window.warmupAllModelsWithVRM = warmupAllModelsWithVRMReal;
-        window.warmupAllModelsWithVRMAndTextures = warmupAllModelsWithVRMAndTexturesReal;
-        window.warmupAllModelsWithVRMAndTexturesAndLighting = warmupAllModelsWithVRMAndTexturesAndLightingReal;
-        window.warmupAllModels = warmupAllModelsReal;
         
-        // === ASSIGN ACTUAL FUNCTIONS TO GLOBAL WINDOW OBJECTS ===
-        // Now that all functions are defined, replace placeholder functions
-        window.toggleAIMode = toggleAIMode;
-        window.randomizeStyle = randomizeStyle;
-        window.smoothStyle = smoothStyle;
-        window.aggressiveStyle = aggressiveStyle;
-        window.analyzeCurrentMotion = analyzeCurrentMotion;
-        window.toggleAnimation = toggleAnimation;
-        window.updateAnimationSpeed = updateAnimationSpeed;
-        window.resetAnimation = resetAnimation;
-        
-        // Additional animation and debug functions
-        window.debugFrame = debugFrame;
-        window.fixOrientation = fixOrientation;
-        window.flipDirection = flipDirection;
-        window.updateJointIntensity = updateJointIntensity;
-        window.toggleSimpleMode = toggleSimpleMode;
-        window.debugBVH = debugBVH;
-        window.resetCharacterDirection = resetCharacterDirection;
+        // Initialize placeholder functions (will be replaced after initialization)
+        window.toggleAIMode = function() { console.log('toggleAIMode not yet initialized'); };
+        window.randomizeStyle = function() { console.log('randomizeStyle not yet initialized'); };
+        window.smoothStyle = function() { console.log('smoothStyle not yet initialized'); };
+        window.aggressiveStyle = function() { console.log('aggressiveStyle not yet initialized'); };
+        window.analyzeCurrentMotion = function() { console.log('analyzeCurrentMotion not yet initialized'); };
+        window.toggleAnimation = function() { console.log('toggleAnimation not yet initialized'); };
+        window.updateAnimationSpeed = function() { console.log('updateAnimationSpeed not yet initialized'); };
+        window.resetAnimation = function() { console.log('resetAnimation not yet initialized'); };
+        window.debugFrame = function() { console.log('debugFrame not yet initialized'); };
+        window.fixOrientation = function() { console.log('fixOrientation not yet initialized'); };
+        window.flipDirection = function() { console.log('flipDirection not yet initialized'); };
+        window.updateJointIntensity = function() { console.log('updateJointIntensity not yet initialized'); };
+        window.toggleSimpleMode = function() { console.log('toggleSimpleMode not yet initialized'); };
+        window.debugBVH = function() { console.log('debugBVH not yet initialized'); };
+        window.resetCharacterDirection = function() { console.log('resetCharacterDirection not yet initialized'); };
         
         console.log('✅ All global function assignments complete');
         
-        }
-    }
-        // Start the initialization process immediately
-        initializeRSMTViewer();
-        console.log('✅ Initialization process started');
+        // Note: initializeRSMTViewer() is called after THREE.js loads in the main script section
     </script>
 </body>
 </html>
