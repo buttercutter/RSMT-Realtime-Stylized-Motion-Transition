@@ -154,52 +154,43 @@ class VRMBVHAdapter {
     }
 
     createBoneMapping() {
-        // Map BVH joint names to VRM humanoid bone names
-        // Based on standard VRM humanoid specification
+        // Map BVH joint names from rsmt_showcase_modern.html to VRM humanoid bone names
+        // Based on standard VRM humanoid specification and the specific BVH structure
         return {
-            // Core spine and head
+            // Root
             'Hips': 'hips',
-            'Spine': 'spine',
-            'Spine1': 'chest', 
-            'Spine2': 'upperChest',
+
+            // Spine chain from rsmt_showcase_modern.html
+            'Chest': 'spine',
+            'Chest2': 'chest',
+            'Chest3': 'upperChest',
+            'Chest4': 'neck', // Mapping Chest4 to neck as it's the last segment before Neck in BVH
             'Neck': 'neck',
             'Head': 'head',
-            
-            // Left arm
-            'LeftShoulder': 'leftShoulder',
-            'LeftArm': 'leftUpperArm',
-            'LeftForeArm': 'leftLowerArm',
-            'LeftHand': 'leftHand',
-            
-            // Right arm
-            'RightShoulder': 'rightShoulder',
-            'RightArm': 'rightUpperArm',
-            'RightForeArm': 'rightLowerArm',
-            'RightHand': 'rightHand',
-            
-            // Left leg
-            'LeftUpLeg': 'leftUpperLeg',
-            'LeftLeg': 'leftLowerLeg',
-            'LeftFoot': 'leftFoot',
-            'LeftToeBase': 'leftToes',
-            
-            // Right leg
-            'RightUpLeg': 'rightUpperLeg',
-            'RightLeg': 'rightLowerLeg',
-            'RightFoot': 'rightFoot',
-            'RightToeBase': 'rightToes',
-            
-            // Alternative naming patterns
-            'LeftElbow': 'leftLowerArm',
+
+            // Right arm chain from rsmt_showcase_modern.html
+            'RightCollar': 'rightShoulder',
+            'RightShoulder': 'rightUpperArm',
             'RightElbow': 'rightLowerArm',
-            'LeftWrist': 'leftHand',
             'RightWrist': 'rightHand',
-            'LeftHip': 'leftUpperLeg',
+
+            // Left arm chain from rsmt_showcase_modern.html (mirrored)
+            'LeftCollar': 'leftShoulder',
+            'LeftShoulder': 'leftUpperArm',
+            'LeftElbow': 'leftLowerArm',
+            'LeftWrist': 'leftHand',
+
+            // Right leg chain from rsmt_showcase_modern.html
             'RightHip': 'rightUpperLeg',
-            'LeftKnee': 'leftLowerLeg',
             'RightKnee': 'rightLowerLeg',
+            'RightAnkle': 'rightFoot',
+            'RightToe': 'rightToes',
+
+            // Left leg chain from rsmt_showcase_modern.html (mirrored)
+            'LeftHip': 'leftUpperLeg',
+            'LeftKnee': 'leftLowerLeg',
             'LeftAnkle': 'leftFoot',
-            'RightAnkle': 'rightFoot'
+            'LeftToe': 'leftToes'
         };
     }
 

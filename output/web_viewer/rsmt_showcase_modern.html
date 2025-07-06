@@ -1575,11 +1575,6 @@
                     
                     // Set display mode to show both skeleton and character
                     characterSystem.setDisplayMode('both');
-                    
-                    currentCharacterFile = 'ichika.vrm';
-                    
-                    // Update UI to reflect loaded character
-                    document.getElementById('character-select').value = 'ichika.vrm';
                     document.getElementById('display-mode').value = 'both';
                     document.getElementById('current-character').textContent = 'Ichika (Full VRM + Skeleton)';
                     document.getElementById('display-mode-info').textContent = 'both';
@@ -2200,6 +2195,16 @@
                         }
                     }
                     
+                    // Update VRM adapter if available
+                    if (window.currentVRMAdapter) {
+                        try {
+                            const deltaTime = 0.016; // Approximately 60 FPS
+                            window.currentVRMAdapter.tick(deltaTime);
+                        } catch (e) {
+                            console.warn('⚠️ VRM adapter update error:', e.message);
+                        }
+                    }
+                    
                     // Update camera controller
                     if (cameraController) {
                         try {
@@ -2581,49 +2586,113 @@
             const rootRotX = (frameData[channelIndex++] || 0) * Math.PI / 180; // X second (pitch)
             const rootRotZ = (frameData[channelIndex++] || 0) * Math.PI / 180; // Z third (roll)
             
-            // Apply root transformation to skeleton - use BVH data naturally
-            if (skeletonGroup) {
-                // DEBUG: Log the values we're getting (more detailed)
-                if (animationFrame % 60 === 0) { // Log every 60 frames
-                    console.log('🎬 BVH Animation Debug (TESTING Y-AXIS TURNING):', {
-                        frame: animationFrame,
-                        rootPos: { x: rootX.toFixed(2), y: rootY.toFixed(2), z: rootZ.toFixed(2) },
-                        rootRotDeg: { 
-                            x: (rootRotX*180/Math.PI).toFixed(1) + '° (pitch/lean)', 
-                            y: (rootRotY*180/Math.PI).toFixed(1) + '° (YAW/TURN - main direction)', 
-                            z: (rootRotZ*180/Math.PI).toFixed(1) + '° (roll/side)' 
-                        },
-                        rootRotRad: { x: rootRotX.toFixed(3), y: rootRotY.toFixed(3), z: rootRotZ.toFixed(3) },
-                        skeletonPos: {
-                            x: skeletonGroup.position.x.toFixed(3),
-                            y: skeletonGroup.position.y.toFixed(3), 
-                            z: skeletonGroup.position.z.toFixed(3)
-                        },
-                        bvhScale: bvhScale,
-                        jointCount: Object.keys(jointMeshes).length
-                    });
+            // Priority 1: Apply to VRM character if available
+            if (window.currentVRMAdapter && window.currentVRMAdapter.vrm) {
+                try {
+                    // Debug: Log VRM animation attempt
+                    if (animationFrame % 120 === 0) { // Every 2 seconds at 60fps
+                        console.log('🎭 Applying BVH frame to VRM character...');
+                        console.log('Frame data length:', frameData.length);
+                        console.log('VRM adapter available:', !!window.currentVRMAdapter);
+                        console.log('VRM scene in global scene:', scene.children.some(child => child === window.currentVRMAdapter.vrm.scene));
+                    }
+                    
+                    // Apply BVH frame to VRM character using the adapter
+                    const applied = window.currentVRMAdapter.applyBVHFrameToVRM(frameData);
+                    
+                    if (!applied && animationFrame % 120 === 0) {
+                        console.warn('⚠️ Failed to apply BVH frame to VRM');
+                    }
+                    
+                    // Handle display mode for VRM + skeleton visibility
+                    const displayMode = document.getElementById('display-mode')?.value || 'both';
+                    if (skeletonGroup) {
+                        switch (displayMode) {
+                            case 'character':
+                                skeletonGroup.visible = false;
+                                break;
+                            case 'skeleton':
+                                skeletonGroup.visible = true;
+                                // Hide VRM character if possible
+                                if (window.currentVRMAdapter.vrm.scene) {
+                                    window.currentVRMAdapter.vrm.scene.visible = false;
+                                }
+                                applySkeletonTransformations(rootX, rootY, rootZ, rootRotX, rootRotY, rootRotZ, frameData);
+                                break;
+                            case 'both':
+                            case 'textured_skeleton':
+                            default:
+                                skeletonGroup.visible = true;
+                                // Show VRM character
+                                if (window.currentVRMAdapter.vrm.scene) {
+                                    window.currentVRMAdapter.vrm.scene.visible = true;
+                                }
+                                applySkeletonTransformations(rootX, rootY, rootZ, rootRotX, rootRotY, rootRotZ, frameData);
+                                break;
+                        }
+                    }
+                    
+                    return; // VRM animation applied
+                } catch (error) {
+                    console.warn('⚠️ VRM animation error, falling back to skeleton:', error);
+                    // Continue with skeleton animation as fallback
                 }
-                
-                // Position: scale BVH units to display size
-                skeletonGroup.position.set(
-                    rootX * bvhScale,      // X: as-is from BVH
-                    rootY * bvhScale,      // Y: as-is from BVH (let it control height)
-                    rootZ * bvhScale       // Z: as-is from BVH  
-                );
-                
-                // Apply BVH root transformation - PURE BVH MODE (NO CONSTRAINTS)
-                skeletonGroup.rotation.order = 'YXZ'; // Try Y-first order
-                
-                // Apply BVH rotations DIRECTLY - testing Y-axis for turning
-                // Y: Turning left/right (heading/yaw) - THIS should control direction!
-                // X: Leaning forward/back (pitch)  
-                // Z: Rolling side to side (roll)
-                skeletonGroup.rotation.set(
-                    rootRotX,  // X: Forward/back lean (pitch)
-                    rootRotY,  // Y: Left/right turning (yaw) - PRIMARY DIRECTION CONTROL
-                    rootRotZ   // Z: Roll
-                );
             }
+            
+            // Priority 2: Apply to skeleton if no VRM or VRM failed
+            if (skeletonGroup) {
+                applySkeletonTransformations(rootX, rootY, rootZ, rootRotX, rootRotY, rootRotZ, frameData);
+            }
+        }
+        
+        function applySkeletonTransformations(rootX, rootY, rootZ, rootRotX, rootRotY, rootRotZ, frameData) {
+            let channelIndex = 6; // Skip root position and rotation channels
+            
+            // DEBUG: Log the values we're getting (more detailed)
+            if (animationFrame % 60 === 0) { // Log every 60 frames
+                console.log('🎬 BVH Animation Debug (TESTING Y-AXIS TURNING):', {
+                    frame: animationFrame,
+                    rootPos: { x: rootX.toFixed(2), y: rootY.toFixed(2), z: rootZ.toFixed(2) },
+                    rootRotDeg: { 
+                        x: (rootRotX*180/Math.PI).toFixed(1) + '° (pitch/lean)', 
+                        y: (rootRotY*180/Math.PI).toFixed(1) + '° (YAW/TURN - main direction)', 
+                        z: (rootRotZ*180/Math.PI).toFixed(1) + '° (roll/side)' 
+                    },
+                    rootRotRad: { x: rootRotX.toFixed(3), y: rootRotY.toFixed(3), z: rootRotZ.toFixed(3) },
+                        x: (rootRotX*180/Math.PI).toFixed(1) + '° (pitch/lean)', 
+                        y: (rootRotY*180/Math.PI).toFixed(1) + '° (YAW/TURN - main direction)', 
+                        z: (rootRotZ*180/Math.PI).toFixed(1) + '° (roll/side)' 
+                    },
+                    rootRotRad: { x: rootRotX.toFixed(3), y: rootRotY.toFixed(3), z: rootRotZ.toFixed(3) },
+                    skeletonPos: {
+                        x: skeletonGroup.position.x.toFixed(3),
+                        y: skeletonGroup.position.y.toFixed(3), 
+                        z: skeletonGroup.position.z.toFixed(3)
+                    },
+                    bvhScale: bvhScale,
+                    jointCount: Object.keys(jointMeshes).length
+                });
+            }
+            
+            // Position: scale BVH units to display size
+            skeletonGroup.position.set(
+                rootX * bvhScale,      // X: as-is from BVH
+                rootY * bvhScale,      // Y: as-is from BVH (let it control height)
+                rootZ * bvhScale       // Z: as-is from BVH  
+            );
+            
+            // Apply BVH root transformation - PURE BVH MODE (NO CONSTRAINTS)
+            skeletonGroup.rotation.order = 'YXZ'; // Try Y-first order
+            
+            // Apply BVH rotations DIRECTLY - testing Y-axis for turning
+            // Y: Turning left/right (heading/yaw) - THIS should control direction!
+            // X: Leaning forward/back (pitch)  
+            // Z: Rolling side to side (roll)
+            skeletonGroup.rotation.set(
+                rootRotX,  // X: Forward/back lean (pitch)
+                rootRotY,  // Y: Left/right turning (yaw) - PRIMARY DIRECTION CONTROL
+                rootRotZ   // Z: Roll
+            );
             
             // Apply joint rotations using correct BVH joint order
             const bvhJointOrder = [
@@ -3521,6 +3590,43 @@
                 return `Fixed ${fixedCount} VRM materials for better compatibility`;
             };
             
+            // Function to debug VRM state
+            window.debugVRMState = function() {
+                console.log('🔍 VRM Debug State:');
+                console.log('  currentVRMAdapter:', !!window.currentVRMAdapter);
+                if (window.currentVRMAdapter) {
+                    console.log('  vrm:', !!window.currentVRMAdapter.vrm);
+                    console.log('  initialized:', window.currentVRMAdapter.initialized);
+                    console.log('  available bones:', window.currentVRMAdapter.getAvailableBones?.().length || 'no method');
+                    console.log('  scene in global scene:', scene.children.some(child => child === window.currentVRMAdapter.vrm?.scene));
+                    if (window.currentVRMAdapter.vrm?.scene) {
+                        console.log('  scene visible:', window.currentVRMAdapter.vrm.scene.visible);
+                        console.log('  scene position:', window.currentVRMAdapter.vrm.scene.position);
+                        console.log('  scene children:', window.currentVRMAdapter.vrm.scene.children.length);
+                    }
+                }
+                console.log('  vrmCharacter:', !!window.vrmCharacter);
+                console.log('  Global scene children:', scene.children.length);
+                
+                // Test applying a frame manually
+                if (window.currentVRMAdapter && bvhData[currentAnimation]?.frames?.length > 0) {
+                    console.log('🧪 Testing manual frame application...');
+                    const testFrame = bvhData[currentAnimation].frames[0];
+                    try {
+                        const result = window.currentVRMAdapter.applyBVHFrameToVRM(testFrame);
+                        console.log('  Manual frame application result:', result);
+                        console.log('  Test frame data length:', testFrame.length);
+                        console.log('  Test frame sample:', testFrame.slice(0, 6));
+                    } catch (error) {
+                        console.error('  Manual frame application error:', error);
+                    }
+                } else {
+                    console.log('❌ Cannot test frame application - missing adapter or data');
+                }
+                
+                return 'VRM debug info logged to console';
+            };
+            
             // Function to toggle shadow mapping for testing
             window.toggleShadows = function() {
                 const enabled = !renderer.shadowMap.enabled;
@@ -3545,17 +3651,102 @@
                 return `Shadows ${enabled ? 'enabled' : 'disabled'}`;
             };
             
-            // Character management functions
+            // Character management functions - Enhanced with VRM rigging
             window.loadSelectedCharacter = async function() {
                 const select = document.getElementById('character-select');
                 const characterFile = select.value;
                 
                 if (characterFile && characterSystem) {
                     try {
-                        statusDiv.textContent = `Applying textures: ${characterFile}`;
-                        updateLoadingStatus(`Applying VRM textures: ${characterFile}`);
+                        statusDiv.textContent = `Loading VRM character: ${characterFile}`;
+                        updateLoadingStatus(`Loading VRM character: ${characterFile}`);
                         
-                        // Extract character name for texture application
+                        // Try to load the actual VRM character first
+                        console.log('🎭 Attempting to load VRM character:', characterFile);
+                        
+                        // Use the AdvancedVRMLoader that's already in the system
+                        if (window.AdvancedVRMLoader) {
+                            // Make sure scene is available globally for the loader
+                            window.scene = scene;
+                            
+                            const vrmModel = await window.AdvancedVRMLoader.loadVRMCharacter(`./assets/avatars/${characterFile}`);
+                            
+                            if (vrmModel && vrmModel.vrm) {
+                                console.log('🎭 VRM model loaded successfully, creating VRM-BVH adapter...');
+                                console.log('VRM scene added to global scene:', !!vrmModel.scene);
+                                
+                                // Ensure VRM is added to the scene if not already
+                                if (vrmModel.scene && !scene.children.includes(vrmModel.scene)) {
+                                    scene.add(vrmModel.scene);
+                                    console.log('✅ VRM scene manually added to global scene');
+                                }
+                                
+                                // Initialize VRM-BVH adapter for proper rigging
+                                if (window.VRMBVHAdapter) {
+                                    console.log('🔗 Creating VRM-BVH adapter');
+                                    // Pass the VRM model (not vrmModel.vrm) to the adapter
+                                    window.currentVRMAdapter = new window.VRMBVHAdapter(vrmModel.vrm, skeletonGroup);
+                                    
+                                    // Initialize the adapter with bone mapping
+                                    const initialized = window.currentVRMAdapter.initialize();
+                                    
+                                    if (initialized) {
+                                        console.log('🎭 VRM-BVH adapter initialized successfully');
+                                        console.log('Available bones:', window.currentVRMAdapter.getAvailableBones().length);
+                                        
+                                        // Set up idle animations like in the chat system
+                                        window.currentVRMAdapter.setIdleAnimations({
+                                            breathing: { enabled: true, amplitude: 0.015, frequency: 0.3 },
+                                            blinking: { enabled: true, interval: 2500, duration: 120 },
+                                            headMovement: { enabled: true, amplitude: 0.03, frequency: 0.08 },
+                                            facialExpressions: { enabled: true, currentExpression: 'neutral' }
+                                        });
+                                        
+                                        // Enable camera-looking behavior
+                                        window.currentVRMAdapter.lookAtCameraAsIfHuman(camera);
+                                        
+                                        // Store the VRM model globally (store the full model, not just VRM)
+                                        window.vrmCharacter = vrmModel;
+                                        
+                                        // Set display mode to show both VRM and skeleton
+                                        characterSystem.setDisplayMode('both');
+                                        document.getElementById('display-mode').value = 'both';
+                                        
+                                        statusDiv.textContent = `VRM character loaded: ${characterFile.replace('.vrm', '')}`;
+                                        currentCharacterFile = characterFile;
+                                        
+                                        // Update info panel
+                                        const displayName = characterFile.replace('.vrm', '').replace(/^\w/, c => c.toUpperCase());
+                                        document.getElementById('current-character').textContent = `${displayName} (VRM + Skeleton)`;
+                                        
+                                        console.log('✅ VRM character loaded and rigged to BVH system:', characterFile);
+                                        console.log('🎭 VRM-BVH adapter initialized with', window.currentVRMAdapter.getAvailableBones().length, 'bones');
+                                        
+                                        // Apply enhanced VRM lighting
+                                        if (typeof enhanceVRMLighting === 'function') {
+                                            enhanceVRMLighting(window.vrmCharacter);
+                                        }
+                                        
+                                        // Enable debug mode for testing
+                                        window.currentVRMAdapter.debugMode = true;
+                                        
+                                        return; // Success - exit early
+                                    } else {
+                                        console.warn('⚠️ Failed to initialize VRM-BVH adapter');
+                                    }
+                                } else {
+                                    console.warn('⚠️ VRMBVHAdapter not available');
+                                }
+                            } else {
+                                console.warn('⚠️ Failed to load VRM model');
+                            }
+                        } else {
+                            console.warn('⚠️ AdvancedVRMLoader not available');
+                        }
+                        
+                        // Fallback to textured skeleton if VRM loading fails
+                        console.log('⚠️ Falling back to textured skeleton approach');
+                        
                         const characterName = characterFile.replace('.vrm', '');
                         
                         // Apply VRM textures to the BVH skeleton
@@ -3575,8 +3766,8 @@
                         console.log('✅ Character textures applied to skeleton:', characterFile);
                         
                     } catch (error) {
-                        console.error('❌ Failed to apply character textures:', error);
-                        statusDiv.textContent = `Failed to apply textures: ${error.message}`;
+                        console.error('❌ Failed to load VRM character:', error);
+                        statusDiv.textContent = `Failed to load character: ${error.message}`;
                     }
                 } else if (!characterFile) {
                     // Reset to default skeleton if no character selected
