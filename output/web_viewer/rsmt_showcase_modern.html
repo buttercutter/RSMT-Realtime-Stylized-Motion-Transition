@@ -185,56 +185,9 @@
         <div id="ui-panel">
             <div class="title">🎭 RSMT Neural Network Motion System (Modern)</div>
             
-            <!-- AI Inference Monitoring Dashboard -->
-            <div class="ai-monitoring-panel" id="ai-monitoring" style="background: rgba(0, 50, 100, 0.15); border: 1px solid #00d4ff; padding: 12px; border-radius: 8px; margin: 10px 0; font-size: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <strong style="color: #00d4ff;">🧠 AI Inference Monitor</strong>
-                    <button id="toggle-inference-details" style="background: none; border: 1px solid #00d4ff; color: #00d4ff; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">Show Details</button>
-                </div>
-                
-                <div class="inference-summary" id="inference-summary">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                        <div class="model-status" id="deephase-status">
-                            <div style="color: #00ff88; font-weight: bold;">DeepPhase</div>
-                            <div style="font-size: 10px;">Ready</div>
-                        </div>
-                        <div class="model-status" id="stylevae-status">
-                            <div style="color: #ff8800; font-weight: bold;">StyleVAE</div>
-                            <div style="font-size: 10px;">Standby</div>
-                        </div>
-                        <div class="model-status" id="transitionnet-status">
-                            <div style="color: #ff4488; font-weight: bold;">TransitionNet</div>
-                            <div style="font-size: 10px;">Idle</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Model Warmup Controls -->
-                    <div style="display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap;">
-                        <button id="warmup-all-btn" onclick="warmupAllModels()" style="background: #4CAF50; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🔥 Warm Up All</button>
-                        <button id="warmup-stylevae-btn" onclick="warmupStyleVAE()" style="background: #ff8800; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🎨 Wake StyleVAE</button>
-                        <button id="warmup-transitionnet-btn" onclick="warmupTransitionNet()" style="background: #ff4488; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🔄 Wake TransitionNet</button>
-                        <!-- <button id="test-server-btn" onclick="testServerConnection()" style="background: #2196F3; border: none; color: white; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;">🌐 Test Server</button> -->
-                    </div>
-                    
-                    <div class="inference-metrics" id="inference-metrics" style="border-top: 1px solid rgba(0, 212, 255, 0.3); padding-top: 8px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10px;">
-                            <div>Inference Rate: <span id="inference-rate">60 FPS</span></div>
-                            <div>Latency: <span id="inference-latency">16ms</span></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="inference-details" id="inference-details" style="display: none; border-top: 1px solid rgba(0, 212, 255, 0.3); padding-top: 8px; margin-top: 8px;">
-                    <div class="inference-log" id="inference-log" style="background: rgba(0, 0, 0, 0.3); padding: 8px; border-radius: 4px; max-height: 150px; overflow-y: auto; font-family: monospace; font-size: 10px;">
-                        <div style="color: #00d4ff;">AI Inference Log:</div>
-                        <div style="color: #00ff88;">✓ DeepPhase model loaded</div>
-                        <div style="color: #ffaa00;">⚠ StyleVAE on standby</div>
-                        <div style="color: #ff6666;">⚠ TransitionNet not connected</div>
-                        <div style="color: #888;">Tensor Shapes:</div>
-                            <div id="tensor-shapes">Waiting for inference...</div>
-                    </div>
-                </div>
-            </div>
+            
+            
+            
             
             <div class="controls">
                 <button id="play-pause">Play/Pause</button>
@@ -261,6 +214,10 @@
                     <button onclick="analyzeCurrentMotion()" style="padding: 8px 16px; background: #607D8B; color: white; border: none; border-radius: 4px; cursor: pointer;">🔍 Analyze Motion</button>
                 </div>
             </div>
+
+
+
+            
 
             <!-- Character & Environment Controls -->
             <div class="controls" style="margin-top: 15px; padding: 15px; background: rgba(100, 0, 200, 0.1); border-radius: 8px; border: 1px solid #a855f7;">
@@ -393,8 +350,7 @@
     </div>
 
 
-    <!-- ONNX Runtime Web with WebGPU support -->
-    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.0/dist/ort.webgpu.min.js"></script>
+    
 
     <!-- Character System Components -->
     <script src="./js/VRMBVHAdapter.js"></script>
@@ -436,11 +392,7 @@
         // === GLOBAL FUNCTION PLACEHOLDERS (Available immediately) ===
 
         // Define placeholder functions first so onclick handlers work
-        window.toggleAIMode = function() { console.log('AI Mode not ready yet'); };
-        window.randomizeStyle = function() { console.log('Style functions not ready yet'); };
-        window.smoothStyle = function() { console.log('Style functions not ready yet'); };
-        window.aggressiveStyle = function() { console.log('Style functions not ready yet'); };
-        window.analyzeCurrentMotion = function() { console.log('Analysis not ready yet'); };
+        
         window.toggleAnimation = function() { console.log('Animation controls not ready yet'); };
         window.updateAnimationSpeed = function() { console.log('Animation controls not ready yet'); };
         window.resetAnimation = function() { console.log('Animation controls not ready yet'); };
@@ -451,11 +403,7 @@
         window.toggleSimpleMode = function() { console.log('Mode functions not ready yet'); };
         window.debugBVH = function() { console.log('BVH functions not ready yet'); };
         window.resetCharacterDirection = function() { console.log('Direction functions not ready yet'); };
-        window.testServerConnection = function() { console.log('Server functions not ready yet'); };
-        window.warmupStyleVAE = function() { console.log('Warmup functions not ready yet'); };
-        window.warmupTransitionNet = function() { console.log('Warmup functions not ready yet'); };
-        window.warmupAllModels = function() { console.log('Warmup functions not ready yet'); };
-        window.checkONNXRuntimeSetup = function() { console.log('checkONNXRuntimeSetup not ready yet'); };
+        
         
         // Character System Placeholders
         window.toggleClassroom = function() { console.log('Character system not ready yet'); };
@@ -586,359 +534,9 @@
     
 
 
-        // === REAL AI MODEL MANAGER ===
-        class RSMTModelManager {
-            constructor() {
-                this.models = {};
-                this.isInitialized = false;
-                this.webgpuSupported = false;
-                this.currentStyle = new Float32Array(256); // Style vector
-                this.currentPhase = 0.0;
-                this.motionHistory = [];
-                this.maxHistoryFrames = 60; // 1 second at 60fps
-            }
+        
 
-            async initialize() {
-                try {
-                    logInferenceEvent('🔧 Initializing WebGPU + ONNX Runtime...', 'info');
-
-
-                    // Check cross-origin isolation first
-                    if (!self.crossOriginIsolated) {
-                        logInferenceEvent('⚠️ Cross-origin isolation not enabled - using single-threaded mode', 'warning');
-                        // Force single-threaded mode
-                        ort.env.wasm.numThreads = 1;
-                    } else {
-                        logInferenceEvent('✅ Cross-origin isolation enabled - multi-threading available', 'success');
-                        ort.env.wasm.numThreads = 4; // Enable multi-threading
-                    }
-
-                    // Check WebGPU support
-                    if (!navigator.gpu) {
-                        logInferenceEvent('⚠️ WebGPU not supported in this browser - using WASM backend', 'warning');
-                        this.webgpuSupported = false;
-                    } else {
-                        try {
-                            const adapter = await navigator.gpu.requestAdapter();
-                            if (adapter) {
-                                logInferenceEvent('✅ WebGPU adapter found', 'success');
-                                this.webgpuSupported = true;
-                            } else {
-                                logInferenceEvent('⚠️ WebGPU adapter not available - using WASM backend', 'warning');
-                                this.webgpuSupported = false;
-                            }
-                        } catch (error) {
-                            logInferenceEvent(`⚠️ WebGPU initialization failed: ${error.message}`, 'warning');
-                            this.webgpuSupported = false;
-                        }
-                    }
-
-
-                    // Call validation before loading models
-                    if (this.webgpuSupported) {
-                        await this.validateWebGPUForModels();
-                        await this.validateModelFile('./stylevae.onnx');
-                    }
-
-
-                    // Load all three models
-                    await this.loadModels();
-
-                    // Initialize with neutral style
-                    this.currentStyle.fill(0.1);
-
-                    this.isInitialized = true;
-                    logInferenceEvent('🎯 AI Model Manager initialized successfully!', 'success');
-
-                } catch (error) {
-                    logInferenceEvent(`❌ AI initialization failed: ${error.message}`, 'error');
-                    throw error;
-                }
-            }
-
-
-            async validateWebGPUForModels() {
-                logInferenceEvent('🔍 Validating WebGPU capabilities...', 'info');
-                
-                try {
-                    // Check WebGPU adapter limits
-                    const adapter = await navigator.gpu.requestAdapter();
-                    const device = await adapter.requestDevice();
-                    
-                    const limits = adapter.limits;
-                    logInferenceEvent(`🎮 WebGPU Limits:`, 'info');
-                    logInferenceEvent(`   Max buffer size: ${limits.maxBufferSize}`, 'info');
-                    logInferenceEvent(`   Max texture dimension: ${limits.maxTextureDimension2D}`, 'info');
-                    logInferenceEvent(`   Max compute workgroup size: ${limits.maxComputeWorkgroupSizeX}`, 'info');
-                    
-                    // Check ONNX Runtime WebGPU support
-                    logInferenceEvent(`🔍 ONNX Runtime version: ${ort.version || 'unknown'}`, 'info');
-                    
-                    // Test simple WebGPU tensor creation
-                    const testTensor = new ort.Tensor('float32', [1, 2, 3, 4], [2, 2]);
-                    logInferenceEvent(`✅ Basic tensor creation works`, 'success');
-                    
-                    return true;
-                    
-                } catch (error) {
-                    logInferenceEvent(`❌ WebGPU validation failed: ${error.message}`, 'error');
-                    return false;
-                }
-            }
-
-
-            async validateModelFile(modelPath) {
-                try {
-                    logInferenceEvent(`🔍 Validating model file: ${modelPath}`, 'info');
-
-                    const response = await fetch(modelPath);
-                    if (!response.ok) {
-                        throw new Error(`Model file not found: ${response.status} ${response.statusText}`);
-                    }
-
-                    const arrayBuffer = await response.arrayBuffer();
-                    const fileSize = arrayBuffer.byteLength;
-
-                    logInferenceEvent(`📊 Model file size: ${(fileSize / 1024 / 1024).toFixed(2)} MB`, 'info');
-
-                    if (fileSize === 0) {
-                        throw new Error('Model file is empty');
-                    }
-
-                    if (fileSize > 100 * 1024 * 1024) { // 100MB
-                        logInferenceEvent(`⚠️ Large model file (${(fileSize / 1024 / 1024).toFixed(2)} MB) - may cause WebGPU issues`, 'warning');
-                    }
-
-                    // Check if it's a valid ONNX file (starts with specific bytes)
-                    const uint8Array = new Uint8Array(arrayBuffer, 0, 8);
-                    const header = Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join('');
-                    logInferenceEvent(`📊 Model file header: ${header}`, 'info');
-
-                    return true;
-
-                } catch (error) {
-                    logInferenceEvent(`❌ Model validation failed: ${error.message}`, 'error');
-                    return false;
-                }
-            }
-
-
-            async loadModels() {
-                const modelConfigs = {
-                    stylevae: {
-                        path: './stylevae.onnx',
-                        inputShape: [1, 66, 60], // [batch, channels, sequence_length]
-                        outputShape: [1, 256]    // [batch, style_dim]
-                    },
-                    deepphase: {
-                        path: './deepphase.onnx',
-                        inputShape: [1, 66],      // [batch, channels]
-                        outputShape: [1, 1]       // [batch, phase]
-                    },
-                    transitionnet: {
-                        path: './transitionnet.onnx',
-                        inputShape: [1, 66 + 256], // [batch, motion + style]
-                        outputShape: [1, 66]        // [batch, output_motion]
-                    }
-                };
-
-
-                for (const [modelName, config] of Object.entries(modelConfigs)) {
-                    try {
-                        updateModelStatus(modelName, 'Loading...', 'Downloading ONNX model');
-                        logInferenceEvent(`📥 Loading ${modelName} from ${config.path}...`, 'info');
-
-                        // Determine execution providers based on capabilities
-                        let executionProviders;
-                        if (this.webgpuSupported) {
-                            executionProviders = ['webgpu', 'wasm'];
-                            logInferenceEvent(`🎯 ${modelName}: Trying WebGPU first`, 'info');
-                        } else {
-                            executionProviders = ['wasm'];
-                            logInferenceEvent(`🔧 ${modelName}: Using WASM backend only`, 'info');
-                        }
-
-                        let session;
-                        try {
-                            session = await ort.InferenceSession.create(config.path, {
-                                executionProviders: executionProviders,
-                                graphOptimizationLevel: 'all'
-                            });
-
-                            logInferenceEvent(`✅ ${modelName} loaded on ${executionProviders[0]}`, 'success');
-
-                        } catch (providerError) {
-                            if (this.webgpuSupported && executionProviders.includes('webgpu')) {
-                                logInferenceEvent(`⚠️ WebGPU failed for ${modelName}, trying WASM: ${providerError.message}`, 'warning');
-                                // Fallback to WASM only
-                                session = await ort.InferenceSession.create(config.path, {
-                                    executionProviders: ['wasm'],
-                                    graphOptimizationLevel: 'all'
-                                });
-                                logInferenceEvent(`✅ ${modelName} loaded on WASM (fallback)`, 'success');
-                            } else {
-                                throw providerError;
-                            }
-                        }
-
-                        this.models[modelName] = {
-                            session: session,
-                            config: config,
-                            lastInferenceTime: 0
-                        };
-
-                        updateModelStatus(modelName, 'Ready', `Loaded successfully`);
-
-                    } catch (error) {
-                        updateModelStatus(modelName, 'Failed', error.message);
-                        logInferenceEvent(`❌ Failed to load ${modelName}: ${error.message}`, 'error');
-                        throw error;
-                    }
-                }
-            }
-
-            async encodeStyle(motionSequence) {
-                if (!this.models.stylevae) {
-                    throw new Error('StyleVAE model not loaded');
-                }
-
-                const startTime = performance.now();
-                updateModelStatus('stylevae', 'Processing...', 'Encoding style from motion');
-
-                try {
-                    // Prepare input tensor
-                    const inputTensor = new ort.Tensor('float32', motionSequence, [1, 66, 60]);
-
-                    // Run inference
-                    const feeds = { input: inputTensor };
-                    const results = await this.models.stylevae.session.run(feeds);
-
-                    // Extract style vector
-                    const styleVector = results.output.data;
-                    this.currentStyle = new Float32Array(styleVector);
-
-                    const processingTime = performance.now() - startTime;
-                    this.models.stylevae.lastInferenceTime = processingTime;
-
-                    updateModelStatus('stylevae', 'Active', `Style encoded in ${processingTime.toFixed(1)}ms`);
-                    logInferenceEvent(`🎨 Style encoded: ${styleVector.length}D vector in ${processingTime.toFixed(1)}ms`, 'success');
-
-                    return this.currentStyle;
-
-                } catch (error) {
-                    updateModelStatus('stylevae', 'Error', error.message);
-                    logInferenceEvent(`❌ StyleVAE inference failed: ${error.message}`, 'error');
-                    throw error;
-                }
-            }
-
-            async predictPhase(motionFrame) {
-                if (!this.models.deepphase) {
-                    throw new Error('DeepPhase model not loaded');
-                }
-
-                const startTime = performance.now();
-
-                try {
-                    // Prepare input tensor
-                    const inputTensor = new ort.Tensor('float32', motionFrame, [1, 66]);
-
-                    // Run inference
-                    const feeds = { input: inputTensor };
-                    const results = await this.models.deepphase.session.run(feeds);
-
-                    // Extract phase
-                    this.currentPhase = results.output.data[0];
-
-                    const processingTime = performance.now() - startTime;
-                    this.models.deepphase.lastInferenceTime = processingTime;
-
-                    // Update UI every 30 frames to avoid spam
-                    if (animationFrame % 30 === 0) {
-                        updateModelStatus('deepphase', 'Active', `Phase: ${this.currentPhase.toFixed(3)}`);
-                        logInferenceEvent(`🔄 Phase predicted: ${this.currentPhase.toFixed(3)} (${processingTime.toFixed(1)}ms)`, 'info');
-                    }
-
-                    return this.currentPhase;
-
-                } catch (error) {
-                    updateModelStatus('deepphase', 'Error', error.message);
-                    logInferenceEvent(`❌ DeepPhase inference failed: ${error.message}`, 'error');
-                    throw error;
-                }
-            }
-
-            async generateTransition(currentMotion, targetStyle, transitionLength = 10) {
-                if (!this.models.transitionnet) {
-                    throw new Error('TransitionNet model not loaded');
-                }
-
-                const startTime = performance.now();
-                updateModelStatus('transitionnet', 'Generating...', 'Creating motion transition');
-
-                try {
-                    // Combine motion and style
-                    const combinedInput = new Float32Array(66 + 256);
-                    combinedInput.set(currentMotion, 0);
-                    combinedInput.set(targetStyle, 66);
-
-                    // Prepare input tensor
-                    const inputTensor = new ort.Tensor('float32', combinedInput, [1, 66 + 256]);
-
-                    // Run inference
-                    const feeds = { input: inputTensor };
-                    const results = await this.models.transitionnet.session.run(feeds);
-
-                    // Extract generated motion
-                    const generatedMotion = results.output.data;
-
-                    const processingTime = performance.now() - startTime;
-                    this.models.transitionnet.lastInferenceTime = processingTime;
-
-                    updateModelStatus('transitionnet', 'Active', `Transition generated in ${processingTime.toFixed(1)}ms`);
-                    logInferenceEvent(`🔄 Transition generated: ${generatedMotion.length} values in ${processingTime.toFixed(1)}ms`, 'success');
-
-                    return new Float32Array(generatedMotion);
-
-                } catch (error) {
-                    updateModelStatus('transitionnet', 'Error', error.message);
-                    logInferenceEvent(`❌ TransitionNet inference failed: ${error.message}`, 'error');
-                    throw error;
-                }
-            }
-
-            updateMotionHistory(motionFrame) {
-                this.motionHistory.push(new Float32Array(motionFrame));
-
-                // Keep only recent history
-                if (this.motionHistory.length > this.maxHistoryFrames) {
-                    this.motionHistory.shift();
-                }
-            }
-
-            getMotionSequence() {
-                // Return flattened motion sequence for StyleVAE
-                if (this.motionHistory.length < 60) {
-                    // Pad with zeros if not enough history
-                    const sequence = new Float32Array(66 * 60);
-                    for (let i = 0; i < this.motionHistory.length; i++) {
-                        sequence.set(this.motionHistory[i], i * 66);
-                    }
-                    return sequence;
-                } else {
-                    // Use last 60 frames
-                    const sequence = new Float32Array(66 * 60);
-                    const recentFrames = this.motionHistory.slice(-60);
-                    for (let i = 0; i < recentFrames.length; i++) {
-                        sequence.set(recentFrames[i], i * 66);
-                    }
-                    return sequence;
-                }
-            }
-        }
-
-        // Global AI model manager
-        let aiModelManager = new RSMTModelManager();
+        
 
 
 
@@ -1586,6 +1184,7 @@
                     
                     statusDiv.textContent = '🎉 Full Ichika VRM character loaded!';
                     console.log('🎉 Full Ichika VRM character loaded with skeleton!');
+                                skeletonGroup.visible = false;
                     
                 } catch (vrmError) {
                     console.warn('⚠️ Failed to auto-load Ichika VRM:', vrmError);
@@ -1797,137 +1396,37 @@
             
 
 
-            // === AI-POWERED ANIMATION LOOP ===
-            let aiMode = false;
-            let baseMotion = null;
-            let generatedMotion = null;
-            let styleUpdateCounter = 0;
-
-            async function toggleAIMode() {
-                aiMode = !aiMode;
-                const aiModeBtn = document.getElementById('ai-mode-btn');
-                
-                if (aiMode) {
-                    if (!aiModelManager.isInitialized) {
-                        try {
-                            await aiModelManager.initialize();
-                        } catch (error) {
-                            logInferenceEvent(`❌ Cannot enable AI mode: ${error.message}`, 'error');
-                            aiMode = false;
-                            return;
-                        }
-                    }
-                    
-                    aiModeBtn.textContent = '🤖 AI Mode: ON';
-                    aiModeBtn.style.background = '#4CAF50';
-                    statusDiv.textContent = 'AI Mode: Neural networks controlling motion';
-                    logInferenceEvent('🧠 AI Mode activated - neural networks now controlling motion', 'success');
-                    
-                    // Initialize with current BVH frame as seed
-                    if (bvhData[currentAnimation] && bvhData[currentAnimation].frames.length > 0) {
-                        const currentFrame = bvhData[currentAnimation].frames[0];
-                        baseMotion = new Float32Array(currentFrame.slice(0, 66));
-                        aiModelManager.updateMotionHistory(baseMotion);
-                    }
-                    
-                } else {
-                    aiModeBtn.textContent = '🎬 BVH Mode: ON';
-                    aiModeBtn.style.background = '#2196F3';
-                    statusDiv.textContent = 'BVH Mode: Playing recorded motion capture';
-                    logInferenceEvent('🎬 BVH Mode activated - playing recorded motion', 'info');
-                }
-            }
-
-            // Modified animation loop with AI integration
+            // Animation loop
             function animate() {
                 requestAnimationFrame(animate);
                 
                 if (isPlaying) {
                     animationFrame++;
                     
-                    if (aiMode && aiModelManager.isInitialized) {
-                        // === AI-POWERED MOTION GENERATION ===
+                    if (bvhData[currentAnimation] && bvhData[currentAnimation].frames.length > 0) {
+                        const frames = bvhData[currentAnimation].frames;
+                        const frameIndex = Math.floor(animationFrame * animationSpeed) % frames.length;
+                        const frameData = frames[frameIndex];
                         
-                        try {
-                            // Every 10 frames, update style encoding
-                            if (styleUpdateCounter % 10 === 0 && aiModelManager.motionHistory.length >= 60) {
-                                const motionSequence = aiModelManager.getMotionSequence();
-                                aiModelManager.encodeStyle(motionSequence).catch(error => {
-                                    logInferenceEvent(`Style encoding failed: ${error.message}`, 'error');
-                                });
+                        // Apply to character system
+                        if (characterSystem) {
+                            try {
+                                characterSystem.applyBVHFrame(frameData);
+                            } catch (e) {
+                                console.warn('⚠️ Character system frame error:', e.message);
                             }
-                            styleUpdateCounter++;
-                            
-                            if (baseMotion) {
-                                // Predict phase for current motion
-                                aiModelManager.predictPhase(baseMotion).then(phase => {
-                                    document.getElementById('current-frame').textContent = `AI Phase: ${phase.toFixed(3)}`;
-                                }).catch(error => {
-                                    console.warn('Phase prediction failed:', error);
-                                });
-                                
-                                // Generate next motion frame using TransitionNet
-                                if (styleUpdateCounter % 5 === 0) { // Generate every 5 frames
-                                    aiModelManager.generateTransition(
-                                        baseMotion,
-                                        aiModelManager.currentStyle
-                                    ).then(newMotion => {
-                                        generatedMotion = newMotion;
-                                        baseMotion = newMotion; // Use generated motion as next base
-                                        aiModelManager.updateMotionHistory(newMotion);
-                                        
-                                        // Apply AI-generated motion to skeleton
-                                        applyAIMotionFrame(newMotion);
-                                        
-                                    }).catch(error => {
-                                        console.warn('Transition generation failed:', error);
-                                    });
-                                }
-                                
-                                // Update UI metrics
-                                document.getElementById('inference-rate').textContent = 
-                                    `${(1000 / (aiModelManager.models.deepphase?.lastInferenceTime || 16)).toFixed(1)} FPS`;
-                                document.getElementById('inference-latency').textContent = 
-                                    `${(aiModelManager.models.deepphase?.lastInferenceTime || 16).toFixed(1)}ms`;
-                            }
-                            
-                        } catch (error) {
-                            logInferenceEvent(`❌ AI processing error: ${error.message}`, 'error');
-                            // Fallback to BVH mode
-                            aiMode = false;
-                            toggleAIMode();
                         }
+                        
+                        // Update frame counter
+                        document.getElementById('current-frame').textContent = `${frameIndex + 1}/${frames.length} (BVH)`;
                         
                     } else {
-                        // === ORIGINAL BVH PLAYBACK ===
-                        
-                        if (bvhData[currentAnimation] && bvhData[currentAnimation].frames.length > 0) {
-                            const frames = bvhData[currentAnimation].frames;
-                            const frameIndex = Math.floor(animationFrame * animationSpeed) % frames.length;
-                            const frameData = frames[frameIndex];
-                            
-                            // Apply BVH frame data to skeleton
-                            applyBVHFrame(frameData);
-                            
-                            // Update motion history for potential AI mode switch
-                            if (frameData.length >= 66) {
-                                aiModelManager.updateMotionHistory(frameData.slice(0, 66));
-                            }
-                            
-                            // Update frame counter
-                            document.getElementById('current-frame').textContent = `${frameIndex + 1}/${frames.length} (BVH)`;
-                            
-                        } else {
-                            document.getElementById('current-frame').textContent = 'No BVH data';
-                        }
+                        document.getElementById('current-frame').textContent = 'No BVH data';
                     }
                     
                     // Update UI displays
                     document.getElementById('animation-speed').textContent = `${animationSpeed.toFixed(1)}x`;
                 }
-                
-                // Update bones and render
-                updateBones();
                 
                 // Update VRM character system (idle animations, facial expressions, etc.)
                 if (characterSystem && characterSystem.vrmAdapter) {
@@ -1949,64 +1448,7 @@
                 renderer.render(scene, camera);
             }
 
-            // New function to apply AI-generated motion
-            function applyAIMotionFrame(motionData) {
-                if (!motionData || motionData.length < 66) return;
-                
-                let channelIndex = 0;
-                
-                // Root position (first 3 channels)
-                const rootX = motionData[channelIndex++] || 0;
-                const rootY = motionData[channelIndex++] || 0;
-                const rootZ = motionData[channelIndex++] || 0;
-                
-                // Root rotation (next 3 channels)
-                const rootRotY = (motionData[channelIndex++] || 0) * Math.PI / 180;
-                const rootRotX = (motionData[channelIndex++] || 0) * Math.PI / 180;
-                const rootRotZ = (motionData[channelIndex++] || 0) * Math.PI / 180;
-                
-                // Apply AI-generated root transformation
-                if (skeletonGroup) {
-                    skeletonGroup.position.set(
-                        rootX * bvhScale,
-                        rootY * bvhScale,
-                        rootZ * bvhScale
-                    );
-                    
-                    skeletonGroup.rotation.order = 'YXZ';
-                    skeletonGroup.rotation.set(rootRotX, rootRotY, rootRotZ);
-                    
-                    // Log AI motion every 60 frames
-                    if (animationFrame % 60 === 0) {
-                        console.log('🤖 AI Motion:', {
-                            rootPos: { x: rootX.toFixed(2), y: rootY.toFixed(2), z: rootZ.toFixed(2) },
-                            rootRot: { x: (rootRotX*180/Math.PI).toFixed(1), y: (rootRotY*180/Math.PI).toFixed(1), z: (rootRotZ*180/Math.PI).toFixed(1) },
-                            currentStyle: aiModelManager.currentStyle.slice(0, 5), // First 5 style dimensions
-                            phase: aiModelManager.currentPhase.toFixed(3)
-                        });
-                    }
-                }
-                
-                // Apply joint rotations (same logic as BVH but with AI data)
-                const bvhJointOrder = [
-                    'Chest', 'Chest2', 'Chest3', 'Chest4', 'Neck', 'Head',
-                    'RightCollar', 'RightShoulder', 'RightElbow', 'RightWrist',
-                    'LeftCollar', 'LeftShoulder', 'LeftElbow', 'LeftWrist',
-                    'RightHip', 'RightKnee', 'RightAnkle', 'RightToe',
-                    'LeftHip', 'LeftKnee', 'LeftAnkle', 'LeftToe'
-                ];
-                
-                bvhJointOrder.forEach(jointName => {
-                    if (jointMeshes[jointName] && channelIndex + 2 < motionData.length) {
-                        const rotY = (motionData[channelIndex++] || 0) * Math.PI / 180;
-                        const rotX = (motionData[channelIndex++] || 0) * Math.PI / 180;
-                        const rotZ = (motionData[channelIndex++] || 0) * Math.PI / 180;
-                        
-                        jointMeshes[jointName].rotation.order = 'YXZ';
-                        jointMeshes[jointName].rotation.set(rotX, rotY, rotZ);
-                    }
-                });
-            }
+            
 
 
             
@@ -2219,12 +1661,7 @@
                         }
                     }
                     
-                    // Update bones
-                    try {
-                        updateBones();
-                    } catch (e) {
-                        console.warn('⚠️ Bone update error:', e.message);
-                    }
+                    
                     
                     // Safe rendering with error handling
                     try {
@@ -2575,170 +2012,7 @@
             };
         }
         
-        // Apply BVH frame data to skeleton
-        function applyBVHFrame(frameData) {
-            if (!frameData || frameData.length < 6) return;
-            
-            let channelIndex = 0;
-            
-            // Root position (first 3 channels)
-            const rootX = frameData[channelIndex++] || 0;
-            const rootY = frameData[channelIndex++] || 0;
-            const rootZ = frameData[channelIndex++] || 0;
-            
-            // Root rotation (next 3 channels) - Try Y-first order (common in many BVH files)
-            const rootRotY = (frameData[channelIndex++] || 0) * Math.PI / 180; // Y first (turning)
-            const rootRotX = (frameData[channelIndex++] || 0) * Math.PI / 180; // X second (pitch)
-            const rootRotZ = (frameData[channelIndex++] || 0) * Math.PI / 180; // Z third (roll)
-            
-            // Priority 1: Apply to VRM character if available
-            if (window.currentVRMAdapter && window.currentVRMAdapter.vrm) {
-                try {
-                    // Debug: Log VRM animation attempt
-                    if (animationFrame % 120 === 0) { // Every 2 seconds at 60fps
-                        console.log('🎭 Applying BVH frame to VRM character...');
-                        console.log('Frame data length:', frameData.length);
-                        console.log('VRM adapter available:', !!window.currentVRMAdapter);
-                        console.log('VRM scene in global scene:', scene.children.some(child => child === window.currentVRMAdapter.vrm.scene));
-                    }
-                    
-                    // Apply BVH frame to VRM character using the adapter
-                    const applied = window.currentVRMAdapter.applyBVHFrameToVRM(frameData);
-                    
-                    if (!applied && animationFrame % 120 === 0) {
-                        console.warn('⚠️ Failed to apply BVH frame to VRM');
-                    }
-                    
-                    // Handle display mode for VRM + skeleton visibility
-                    const displayMode = document.getElementById('display-mode')?.value || 'both';
-                    if (skeletonGroup) {
-                        switch (displayMode) {
-                            case 'character':
-                                skeletonGroup.visible = false;
-                                break;
-                            case 'skeleton':
-                                skeletonGroup.visible = true;
-                                // Hide VRM character if possible
-                                if (window.currentVRMAdapter.vrmModel.scene) {
-                                    window.currentVRMAdapter.vrmModel.scene.visible = false;
-                                }
-                                applySkeletonTransformations(rootX, rootY, rootZ, rootRotX, rootRotY, rootRotZ, frameData);
-                                break;
-                            case 'both':
-                            case 'textured_skeleton':
-                            default:
-                                skeletonGroup.visible = true;
-                                // Show VRM character
-                                if (window.currentVRMAdapter.vrmModel.scene) {
-                                    window.currentVRMAdapter.vrmModel.scene.visible = true;
-                                }
-                                applySkeletonTransformations(rootX, rootY, rootZ, rootRotX, rootRotY, rootRotZ, frameData);
-                                break;
-                        }
-                    }
-                    
-                    return; // VRM animation applied
-                } catch (error) {
-                    console.warn('⚠️ VRM animation error, falling back to skeleton:', error);
-                    // Continue with skeleton animation as fallback
-                }
-            }
-            
-            // Priority 2: Apply to skeleton if no VRM or VRM failed
-            if (skeletonGroup) {
-                applySkeletonTransformations(rootX, rootY, rootZ, rootRotX, rootRotY, rootRotZ, frameData);
-            }
-        }
         
-        function applySkeletonTransformations(rootX, rootY, rootZ, rootRotX, rootRotY, rootRotZ, frameData) {
-            let channelIndex = 6; // Skip root position and rotation channels
-            
-            // DEBUG: Log the values we're getting (more detailed)
-            if (animationFrame % 60 === 0) { // Log every 60 frames
-                console.log('🎬 BVH Animation Debug (TESTING Y-AXIS TURNING):', {
-                    frame: animationFrame,
-                    rootPos: { x: rootX.toFixed(2), y: rootY.toFixed(2), z: rootZ.toFixed(2) },
-                    rootRotDeg: { 
-                        x: (rootRotX*180/Math.PI).toFixed(1) + '° (pitch/lean)', 
-                        y: (rootRotY*180/Math.PI).toFixed(1) + '° (YAW/TURN - main direction)', 
-                        z: (rootRotZ*180/Math.PI).toFixed(1) + '° (roll/side)' 
-                    },
-                    rootRotRad: { x: rootRotX.toFixed(3), y: rootRotY.toFixed(3), z: rootRotZ.toFixed(3) },
-                    skeletonPos: {
-                        x: skeletonGroup.position.x.toFixed(3),
-                        y: skeletonGroup.position.y.toFixed(3), 
-                        z: skeletonGroup.position.z.toFixed(3)
-                    },
-                    bvhScale: bvhScale,
-                    jointCount: Object.keys(jointMeshes).length
-                });
-            }
-            
-            // Position: scale BVH units to display size
-            skeletonGroup.position.set(
-                rootX * bvhScale,      // X: as-is from BVH
-                rootY * bvhScale,      // Y: as-is from BVH (let it control height)
-                rootZ * bvhScale       // Z: as-is from BVH  
-            );
-            
-            // Apply BVH root transformation - PURE BVH MODE (NO CONSTRAINTS)
-            skeletonGroup.rotation.order = 'YXZ'; // Try Y-first order
-            
-            // Apply BVH rotations DIRECTLY - testing Y-axis for turning
-            // Y: Turning left/right (heading/yaw) - THIS should control direction!
-            // X: Leaning forward/back (pitch)  
-            // Z: Rolling side to side (roll)
-            skeletonGroup.rotation.set(
-                rootRotX,  // X: Forward/back lean (pitch)
-                rootRotY,  // Y: Left/right turning (yaw) - PRIMARY DIRECTION CONTROL
-                rootRotZ   // Z: Roll
-            );
-            
-            // Apply joint rotations using correct BVH joint order
-            const bvhJointOrder = [
-                'Chest',          // 3 rotation channels
-                'Chest2',         // 3 rotation channels  
-                'Chest3',         // 3 rotation channels
-                'Chest4',         // 3 rotation channels
-                'Neck',           // 3 rotation channels
-                'Head',           // 3 rotation channels
-                'RightCollar',    // 3 rotation channels
-                'RightShoulder',  // 3 rotation channels
-                'RightElbow',     // 3 rotation channels
-                'RightWrist',     // 3 rotation channels
-                'LeftCollar',     // 3 rotation channels
-                'LeftShoulder',   // 3 rotation channels
-                'LeftElbow',      // 3 rotation channels
-                'LeftWrist',      // 3 rotation channels
-                'RightHip',       // 3 rotation channels
-                'RightKnee',      // 3 rotation channels
-                'RightAnkle',     // 3 rotation channels
-                'RightToe',       // 3 rotation channels
-                'LeftHip',        // 3 rotation channels
-                'LeftKnee',       // 3 rotation channels
-                'LeftAnkle',      // 3 rotation channels
-                'LeftToe'         // 3 rotation channels
-            ];
-            
-            bvhJointOrder.forEach(jointName => {
-                if (jointMeshes[jointName] && channelIndex + 2 < frameData.length) {
-                    // Try Y-first joint rotation order to match root
-                    const rotY = (frameData[channelIndex++] || 0) * Math.PI / 180; // Y first
-                    const rotX = (frameData[channelIndex++] || 0) * Math.PI / 180; // X second
-                    const rotZ = (frameData[channelIndex++] || 0) * Math.PI / 180; // Z third
-                    
-                    // Set rotation order to match root (Y, X, Z)
-                    jointMeshes[jointName].rotation.order = 'YXZ';
-                    
-                    // Apply rotations in Y-first order
-                    jointMeshes[jointName].rotation.set(
-                        rotX,   // X: pitch
-                        rotY,   // Y: yaw (primary rotation)
-                        rotZ    // Z: roll
-                    );
-                }
-            });
-        }
        
 
 
@@ -3268,23 +2542,27 @@
 
             try {
                 await aiModelManager.initialize();
-                updateModelStatus('deephase', 'Ready', 'WebGPU inference ready');
-                updateModelStatus('stylevae', 'Ready', 'WebGPU inference ready');
-                updateModelStatus('transitionnet', 'Ready', 'WebGPU inference ready');
-
-                logInferenceEvent('🎯 All models ready on WebGPU!', 'success');
-                document.getElementById('inference-rate').textContent = 'WebGPU Ready';
-                document.getElementById('inference-latency').textContent = 'Sub-ms';
-
+            // Priority 1: Apply to VRM character if available
+            if (window.currentVRMAdapter && window.currentVRMAdapter.vrmModel) {
+                    if (animationFrame % 120 === 0) { // Every 2 seconds at 60fps
+                        console.log('� Applying BVH frame to VRM character...');
+                        console.log('Frame data length:', frameData.length);
+                        console.log('VRM adapter available:', !!window.currentVRMAdapter);
+                        console.log('VRM scene in global scene:', scene.children.some(child => child === window.currentVRMAdapter.vrmScene));
+                        window.currentVRMAdapter.applyBVHFrame(frameData);
+                    }
+                }
+                updateModelStatus('deephase', 'Ready', 'WebGPU loaded successfully');
+                updateModelStatus('stylevae', 'Ready', 'WebGPU loaded successfully');
+                updateModelStatus('transitionnet', 'Ready', 'WebGPU loaded successfully');
+                logInferenceEvent('✅ All models initialized on WebGPU!', 'success');
             } catch (error) {
-                logInferenceEvent(`❌ Model initialization failed: ${error.message}`, 'error');
                 updateModelStatus('deephase', 'Failed', error.message);
                 updateModelStatus('stylevae', 'Failed', error.message);
                 updateModelStatus('transitionnet', 'Failed', error.message);
+                logInferenceEvent(`❌ WebGPU initialization failed: ${error.message}`, 'error');
             }
         }
-
-
         // === CHARACTER SYSTEM CONTROL FUNCTIONS ===
         
         function initializeCharacterControls() {
@@ -3295,20 +2573,20 @@
                 if (characterSystem) {
                     if (characterSystem.vrmCharacter) {
                         characterSystem.setDisplayMode('character');
-                        document.getElementById('display-mode').value = 'character';
-                        statusDiv.textContent = 'Showing full VRM character';
-                        return '✅ Full VRM character visible';
-                    } else {
+                                // Hide VRM character if possible
+                                if (window.currentVRMAdapter.vrmScene) {
+                                    window.currentVRMAdapter.vrmScene.visible = false;
+                                }
                         statusDiv.textContent = 'Full VRM character not loaded';
                         return '❌ Full VRM character not available';
                     }
                 } else {
                     return '❌ Character system not ready';
                 }
-            };
-            
-            // Comprehensive material diagnostics
-            window.diagnoseMaterials = function() {
+                                // Show VRM character
+                                if (window.currentVRMAdapter.vrmScene) {
+                                    window.currentVRMAdapter.vrmScene.visible = true;
+                                }als = function() {
                 console.log('🔍 Running comprehensive material diagnostics...');
                 
                 // Check if scene exists
@@ -3699,6 +2977,7 @@
                                         
                                         // Store the VRM model globally (store the full model, not just VRM)
                                         window.vrmCharacter = vrmModel;
+                                skeletonGroup.visible = false;
                                         
                                         // Set display mode to show both VRM and skeleton
                                         characterSystem.setDisplayMode('both');
@@ -3712,7 +2991,8 @@
                                         document.getElementById('current-character').textContent = `${displayName} (VRM + Skeleton)`;
                                         
                                         console.log('✅ VRM character loaded and rigged to BVH system:', characterFile);
-                                        console.log('🎭 VRM-BVH adapter initialized with', window.currentVRMAdapter.getAvailableBones().length, 'bones');
+                                    console.log('🎭 VRM-BVH adapter initialized with', window.currentVRMAdapter.getAvailableBones().length, 'bones');
+                                    skeletonGroup.visible = false;
                                         
                                         // Apply enhanced VRM lighting
                                         if (typeof enhanceVRMLighting === 'function') {
@@ -3967,39 +3247,24 @@
             };
             
             console.log('✅ Character control functions initialized');
-        }
+        // Initialize character control functions
+        initCharacterControlFunctions();    
         
         // Make warmup functions globally accessible
         window.testServerConnection = testServerConnectionReal;
         window.warmupStyleVAE = warmupStyleVAEReal;
         window.warmupTransitionNet = warmupTransitionNetReal;
         window.warmupAllModels = warmupAllModelsReal;
-
+        window.warmupAllModelsWithVRM = warmupAllModelsWithVRMReal;
+        window.warmupAllModelsWithVRMAndTextures = warmupAllModelsWithVRMAndTexturesReal;
+        window.warmupAllModelsWithVRMAndTexturesAndLighting = warmupAllModelsWithVRMAndTexturesAndLightingReal;
+        window.warmupAllModels = warmupAllModelsReal;
+        // --- IGNORE --- 
+        }
+    };
+    // Start the initialization process
+    init();       
     </script>
-
-    <!-- // Initialize WebSocket connection -->
-    <!-- setTimeout(() => { -->
-    <!--     logInferenceEvent('🌐 Initializing real-time server connection...', 'info'); -->
-    <!--     connectWebSocket(); -->
-    <!-- }, 1000); -->
-    
-    <!-- // Auto-test server connection on page load -->
-    <!-- setTimeout(() => { -->
-    <!--     logInferenceEvent('Auto-testing server connection...', 'info'); -->
-    <!--     testServerConnection(); -->
-    <!-- }, 2000); -->
-    
-    <!-- // Periodic WebSocket ping and status updates -->
-    <!-- setInterval(() => { -->
-    <!--     if (websocket && websocket.readyState === WebSocket.OPEN) { -->
-    <!--         sendWebSocketCommand('ping'); -->
-    <!--     } else { -->
-    <!--         // Try to reconnect if connection is lost -->
-    <!--         if (!websocket || websocket.readyState === WebSocket.CLOSED) { -->
-    <!--             connectWebSocket(); -->
-    <!--         } -->
-    <!--     } -->
-    <!-- }, 30000); // Every 30 seconds -->
 
 </body>
 </html>

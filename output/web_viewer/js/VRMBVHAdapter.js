@@ -5,10 +5,14 @@
  */
 
 class VRMBVHAdapter {
-    constructor(vrmModel, bvhSkeleton) {
-        this.vrmModel = vrmModel;
+    constructor(vrmModelObject, bvhSkeleton) {
+        // vrmModelObject should contain both .vrm and .scene properties
+        this.vrmModelObject = vrmModelObject;
+        this.vrmModel = vrmModelObject.vrm; // The actual VRM instance
+        this.vrmScene = vrmModelObject.scene; // The THREE.js scene object
         this.bvhSkeleton = bvhSkeleton;
         this.boneMapping = this.createBoneMapping();
+        this.availableBones = {}; // Bones that are available in the VRM model
         this.initialized = false;
         this.debugMode = true; // Set to true for debugging
         
@@ -25,7 +29,9 @@ class VRMBVHAdapter {
         this.currentTime = 0;
         
         console.log('🎭 Enhanced VRMBVHAdapter initialized with idle animations');
-        console.log('VRM Model:', vrmModel);
+        console.log('VRM Model Object:', vrmModelObject);
+        console.log('VRM Instance:', this.vrmModel);
+        console.log('VRM Scene:', this.vrmScene);
         console.log('BVH Skeleton:', bvhSkeleton);
         if (this.debugMode) {
             console.log('Initial bone mapping:', this.boneMapping);
@@ -203,7 +209,8 @@ class VRMBVHAdapter {
         // Check available bones
         const availableBones = {};
         for (const [bvhJoint, vrmBone] of Object.entries(this.boneMapping)) {
-            const bone = this.vrmModel.humanoid.getBoneNode(vrmBone);
+            // Use getNormalizedBoneNode for better compatibility and to avoid deprecation warning
+            const bone = this.vrmModel.humanoid.getNormalizedBoneNode(vrmBone);
             if (bone) {
                 availableBones[bvhJoint] = { vrmBone, bone };
             }
@@ -211,6 +218,12 @@ class VRMBVHAdapter {
         
         this.availableBones = availableBones;
         this.initialized = true;
+
+        // Ensure autoUpdateHumanBones and lookAt.autoUpdate are true for proper VRM animation
+        this.vrmModel.humanoid.autoUpdateHumanBones = true;
+        if (this.vrmModel.lookAt) {
+            this.vrmModel.lookAt.autoUpdate = true;
+        }
         
         console.log('✅ VRMBVHAdapter initialized with', Object.keys(availableBones).length, 'mapped bones');
         if (this.debugMode) {
@@ -231,21 +244,22 @@ class VRMBVHAdapter {
             if (this.debugMode) console.warn('⚠️ Invalid frame data for VRMBVHAdapter');
             return false;
         }
-        
-        try {
+                // Apply root position
+                this.vrmScene.position.set(rootX, rootY, rootZ);
             // Apply root position (first 3 values)
-            if (this.vrmModel.humanoid?.getBoneNode('hips')) {
-                const hipsNode = this.vrmModel.humanoid.getBoneNode('hips');
+            // Use getNormalizedBoneNode for hips
+            if (this.vrmModel.humanoid?.getNormalizedBoneNode('hips')) {
+                const hipsNode = this.vrmModel.humanoid.getNormalizedBoneNode('hips');
                 const rootX = frameData[0] * 0.01; // Scale to match VRM
                 const rootY = frameData[1] * 0.01;
                 const rootZ = frameData[2] * 0.01;
                 
-                // Apply root position
+                // Apply root position to the VRM scene directly
                 this.vrmModel.scene.position.set(rootX, rootY, rootZ);
 
-                if (this.debugMode) {
-                    console.log(`VRM Root Pos: X=${rootX.toFixed(3)}, Y=${rootY.toFixed(3)}, Z=${rootZ.toFixed(3)}`);
-                }
+            // Apply root rotation to the VRM scene directly
+            this.vrmScene.rotation.order = 'YXZ'; // Ensure correct order
+            this.vrmScene.rotation.set(rootRotX, rootRotY, rootRotZ);
             }
             
             // Apply root rotation (next 3 values)
@@ -253,32 +267,43 @@ class VRMBVHAdapter {
             const rootRotX = (frameData[4] || 0) * Math.PI / 180;
             const rootRotZ = (frameData[5] || 0) * Math.PI / 180;
             
+            // Apply root rotation to the VRM scene directly
+            this.vrmModel.scene.rotation.order = 'YXZ'; // Ensure correct order
+            this.vrmModel.scene.rotation.set(rootRotX, rootRotY, rootRotZ);
+
+            if (this.debugMode) {
+                console.log(`VRM Root Rot: X=${(rootRotX*180/Math.PI).toFixed(1)}, Y=${(rootRotY*180/Math.PI).toFixed(1)}, Z=${(rootRotZ*180/Math.PI).toFixed(1)}`);
+            }
+
             // Start from index 6 for joint rotations
             let channelIndex = 6;
             
             // Apply rotations to each mapped bone
-            for (const [bvhJoint, boneData] of Object.entries(this.availableBones)) {
-                if (channelIndex + 2 < frameData.length) {
-                    const bone = boneData.bone;
-                    
-                    // BVH typically uses YXZ rotation order
-                    const rotY = (frameData[channelIndex++] || 0) * Math.PI / 180;
-                    const rotX = (frameData[channelIndex++] || 0) * Math.PI / 180;
-                    const rotZ = (frameData[channelIndex++] || 0) * Math.PI / 180;
-                    
-                    // Apply rotation with proper order
-                    bone.rotation.order = 'YXZ';
-                    bone.rotation.set(rotX, rotY, rotZ);
-                    
-                    if (this.debugMode) {
-                        // Log only a few key joints to avoid spam
-                        if (['Hips', 'Chest', 'Head', 'RightHand', 'LeftFoot'].includes(bvhJoint)) {
-                            console.log(`  ${bvhJoint} (VRM: ${boneData.vrmBone}) Rot: X=${(rotX*180/Math.PI).toFixed(1)}, Y=${(rotY*180/Math.PI).toFixed(1)}, Z=${(rotZ*180/Math.PI).toFixed(1)}`);
-                        }
-                    }
+            for (const [bvhJoint, vrmBone] of Object.entries(this.boneMapping)) {
+                const boneData = this.availableBones[bvhJoint];
+                if (!boneData || !boneData.bone) continue; // Skip if bone not available
+                
+                const boneNode = boneData.bone;
+                
+                // Check if we have enough data for this joint
+                if (channelIndex + 3 >= frameData.length) {
+                    console.warn(`⚠️ Not enough data for ${bvhJoint} (${vrmBone})`);
+                    continue;
                 }
-            }
-            
+                
+                // Apply rotation
+                const rotX = (frameData[channelIndex] || 0) * Math.PI / 180;
+                const rotY = (frameData[channelIndex + 1] || 0) * Math.PI / 180;
+                const rotZ = (frameData[channelIndex + 2] || 0) * Math.PI / 180;
+                
+                boneNode.rotation.set(rotX, rotY, rotZ);
+                
+                if (this.debugMode) {
+                    console.log(`VRM Bone ${vrmBone} (${bvhJoint}): X=${(rotX*180/Math.PI).toFixed(1)}, Y=${(rotY*180/Math.PI).toFixed(1)}, Z=${(rotZ*180/Math.PI).toFixed(1)}`);
+                }
+                
+                channelIndex += 3; // Move to the next joint rotation
+            }            
             // Update VRM humanoid system
             if (this.vrmModel.humanoid?.update) {
                 this.vrmModel.humanoid.update();
@@ -292,38 +317,11 @@ class VRMBVHAdapter {
         }
     }
 
-    setDebugMode(enabled) {
-        this.debugMode = enabled;
-        console.log('🔍 VRMBVHAdapter debug mode:', enabled ? 'ON' : 'OFF');
-    }
 
-    getBoneMapping() {
-        return this.boneMapping;
+    // Export for use in other modules
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = VRMBVHAdapter;
     }
-
-    getAvailableBones() {
-        return this.availableBones ? Object.keys(this.availableBones) : [];
-    }
-
-    // Utility method to visualize bone hierarchy
-    visualizeBoneHierarchy() {
-        if (!this.vrmModel || !this.vrmModel.humanoid) return;
-        
-        console.log('🦴 VRM Bone Hierarchy:');
-        const humanoidBones = this.vrmModel.humanoid.humanBones;
-        
-        for (const [boneName, boneNode] of Object.entries(humanoidBones)) {
-            if (boneNode) {
-                console.log(`  ${boneName}: ${boneNode.name}`);
-            }
-        }
-    }
-}
-
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = VRMBVHAdapter;
-}
 
 // Global export for browser
 if (typeof window !== 'undefined') {
