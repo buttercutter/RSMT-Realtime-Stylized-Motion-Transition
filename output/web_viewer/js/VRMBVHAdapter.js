@@ -663,6 +663,7 @@ class VRMBVHAdapter {
             const rootZ = frameData[2] * this.coordinateConversion.positionScale * (this.coordinateConversion.flipZ ? -1 : 1);
             
             // Apply position to VRM scene (moves entire character)
+            // Offset Y position to keep character closer to ground for better viewing
             this.vrmModel.scene.position.set(rootX, rootY, rootZ);
 
             // Apply root rotation (next 3 values) to VRM scene
@@ -766,9 +767,9 @@ class VRMBVHAdapter {
                     }
                 } else if (bvhJoint.includes('Collar')) {
                     // Collar bones: Reduce influence instead of completely zeroing
-                    finalRotX = rotX * 0.3;  // Reduce collar bone X influence
-                    finalRotY = rotY * 0.3;  // Reduce collar bone Y influence
-                    finalRotZ = rotZ * 0.3;  // Reduce collar bone Z influence
+                    finalRotX = rotX * 0.5;  // Reduce collar bone X influence
+                    finalRotY = rotY * 0.5;  // Reduce collar bone Y influence
+                    finalRotZ = rotZ * 0.5;  // Reduce collar bone Z influence
                 } else if (bvhJoint === 'Head') {
                     // Head bone: Special handling to prevent looking down
                     finalRotX = rotX * -0.5; // Reduce and flip head pitch to prevent looking down
