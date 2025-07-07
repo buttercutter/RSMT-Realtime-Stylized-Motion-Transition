@@ -663,8 +663,8 @@ class VRMBVHAdapter {
             const rootZ = frameData[2] * this.coordinateConversion.positionScale * (this.coordinateConversion.flipZ ? -1 : 1);
             
             // Apply position to VRM scene (moves entire character)
-            // Offset Y position to keep character closer to ground for better viewing
-            this.vrmModel.scene.position.set(rootX, rootY, rootZ);
+            // Keep character on ground level by setting Y to 0 instead of using BVH Y data
+            this.vrmModel.scene.position.set(rootX, 0, rootZ);
 
             // Apply root rotation (next 3 values) to VRM scene
             const rootRotY = (frameData[3] || 0) * Math.PI / 180; // Yaw first in BVH

@@ -385,9 +385,9 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87ceeb);
             
-            // Create camera - positioned for optimal avatar viewing (3-5 meters away, full body visible)
+            // Create camera - positioned for optimal avatar viewing at ground level
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 1.6, 4); // 4 meters away, at eye level (1.6m), facing forward
+            camera.position.set(0, 1.8, 3); // Closer and slightly higher for better full-body view of grounded character
             
             // Create renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -400,11 +400,11 @@
             
             document.getElementById('container').appendChild(renderer.domElement);
             
-            // Add controls - target the avatar's chest area for better viewing
+            // Add controls - target the avatar at appropriate height for grounded character
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.target.set(0, 1.2, 0); // Target avatar's chest area (1.2m high)
+            controls.target.set(0, 0.9, 0); // Target lower since character is now on ground
             
             updateLoadingStatus('Creating classroom environment...');
             
@@ -644,16 +644,16 @@
             vrmCharacter = gltf.userData.vrm;
             scene.add(vrmCharacter.scene);
             
-            // Position character closer to ground for better viewing
-            let safePosition = new THREE.Vector3(0, -0.2, 0); // Lower by 0.2m for better ground contact
+            // Position character to touch the ground properly
+            let safePosition = new THREE.Vector3(0, 0, 0); // Start at ground level
             try {
                 if (classroom && classroom.initialized) {
                     safePosition = classroom.getRandomSafePosition();
-                    safePosition.y = -0.2; // Override Y to place closer to ground
+                    safePosition.y = 0; // Place on ground level
                 }
             } catch (error) {
                 console.log('Using default position (no classroom collision)');
-                safePosition = new THREE.Vector3(0, -2, 0); // Closer to ground
+                safePosition = new THREE.Vector3(0, 0, 0); // Ground level
             }
             
             vrmCharacter.scene.position.copy(safePosition);
@@ -674,9 +674,9 @@
                 updateDebugInfo('💡 Lighting optimized for VRM character');
             }
             
-            // Focus camera on character at proper height for full body view
+            // Focus camera on character at ground level for full body view
             controls.target.copy(vrmCharacter.scene.position);
-            controls.target.y += 1.2; // Target chest area for full body visibility
+            controls.target.y += 1.0; // Target center area for full body visibility at ground level
         }
 
         async function loadBVHFromText(bvhText, filename) {
@@ -773,13 +773,13 @@
                     updateDebugInfo(`📊 Collision meshes: ${info.collisionMeshCount}`);
                     updateDebugInfo(`📐 Floor bounds: ${JSON.stringify(info.floorBounds)}`);
                     
-                    // Reposition character to safe location if loaded (maintain lower Y position)
+                    // Reposition character to safe location if loaded (on ground level)
                     if (vrmCharacter) {
                         const safePosition = classroom.getRandomSafePosition();
-                        safePosition.y = -0.2; // Keep character closer to ground
+                        safePosition.y = 0; // Place character on ground level
                         vrmCharacter.scene.position.copy(safePosition);
                         characterPosition.copy(safePosition);
-                        updateDebugInfo(`🎭 Character repositioned to safe location (closer to ground)`);
+                        updateDebugInfo(`🎭 Character repositioned to safe location (on ground)`);
                     }
                     
                     // Optimize lighting for the classroom
@@ -829,11 +829,11 @@
                 characterPosition.copy(newPosition);
             }
             
-            // Keep character at desired ground level (closer to ground for better viewing)
+            // Keep character properly on the ground
             if (classroom && classroom.getFloorHeight) {
-                vrmCharacter.scene.position.y = classroom.getFloorHeight() - 2; // 0.2m closer to ground
+                vrmCharacter.scene.position.y = classroom.getFloorHeight(); // Exactly on classroom floor
             } else {
-                vrmCharacter.scene.position.y = -22; // Default: closer to ground
+                vrmCharacter.scene.position.y = 0; // Default: ground level
             }
         }
 
@@ -841,10 +841,10 @@
         window.resetCharacterPosition = function() {
             if (!vrmCharacter) return;
             
-            let safePosition = new THREE.Vector3(0, -2, 0); // Default closer to ground
+            let safePosition = new THREE.Vector3(0, 0, 0); // Default at ground level
             if (classroom && classroom.initialized && classroom.getRandomSafePosition) {
-                safePosition = classroom.getRandomSafe,Position();
-                safePosition.y = -0.2; // Override Y to place closer to ground
+                safePosition = classroom.getRandomSafePosition();
+                safePosition.y = 0; // Place exactly on ground
             }
             
             vrmCharacter.scene.position.copy(safePosition);
