@@ -364,6 +364,56 @@ class ClassroomEnvironment {
         this.isLoaded = false;
         console.log('Classroom environment disposed');
     }
+    
+    // Set visibility of all classroom objects
+    setVisible(visible = true) {
+        console.log(`🏫 Setting classroom visibility to: ${visible}`);
+        
+        if (!this.environment) {
+            console.warn('⚠️ No classroom environment loaded to set visibility');
+            return false;
+        }
+        
+        // Set visibility for all objects
+        if (this.environment.objects) {
+            this.environment.objects.forEach(obj => {
+                if (obj && obj.visible !== undefined) {
+                    obj.visible = visible;
+                }
+            });
+            console.log(`✅ Set visibility for ${this.environment.objects.length} classroom objects`);
+        }
+        
+        // Set visibility for all lights  
+        if (this.environment.lights) {
+            this.environment.lights.forEach(light => {
+                if (light && light.visible !== undefined) {
+                    light.visible = visible;
+                }
+            });
+            console.log(`✅ Set visibility for ${this.environment.lights.length} classroom lights`);
+        }
+        
+        return true;
+    }
+    
+    // Get current visibility status
+    isVisible() {
+        if (!this.environment || !this.environment.objects || this.environment.objects.length === 0) {
+            return false;
+        }
+        
+        // Check if at least one object is visible
+        return this.environment.objects.some(obj => obj && obj.visible);
+    }
+    
+    // Toggle classroom visibility
+    toggleVisibility() {
+        const currentlyVisible = this.isVisible();
+        this.setVisible(!currentlyVisible);
+        console.log(`🏫 Classroom visibility toggled: ${!currentlyVisible ? 'VISIBLE' : 'HIDDEN'}`);
+        return !currentlyVisible;
+    }
 }
 
 // Export for module use
