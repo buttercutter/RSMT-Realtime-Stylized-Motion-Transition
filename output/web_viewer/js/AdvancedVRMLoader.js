@@ -86,25 +86,53 @@ class AdvancedVRMLoader {
         if (vrm.scene) {
             vrm.scene.traverse((child) => {
                 if (child.isMesh && child.material) {
+                    // Ensure the mesh is visible
+                    child.visible = true;
+                    child.frustumCulled = false; // Prevent parts from being culled
+                    
                     // Completely disable shadows for VRM materials to prevent shader errors
                     child.castShadow = false;
                     child.receiveShadow = false;
 
                     // Configure material for better lighting without shadows
                     try {
-                        if (child.material.isMeshStandardMaterial || child.material.isMeshPhysicalMaterial) {
-                            child.material.envMapIntensity = 0.8;
-                            child.material.roughness = 0.8;
-                            child.material.metalness = 0.1;
-                        }
-
-                        // Make materials more responsive to lighting
-                        if (child.material.emissive) {
-                            child.material.emissive.multiplyScalar(0.1);
-                        }
+                        // Handle both single materials and material arrays
+                        const materials = Array.isArray(child.material) ? child.material : [child.material];
                         
-                        // Force material update to apply changes
-                        child.material.needsUpdate = true;
+                        materials.forEach((material, index) => {
+                            // Ensure material is visible and opaque
+                            material.visible = true;
+                            material.transparent = false;
+                            material.opacity = 1.0;
+                            
+                            // Fix potential material issues
+                            if (material.isMeshStandardMaterial || material.isMeshPhysicalMaterial) {
+                                material.envMapIntensity = 0.8;
+                                material.roughness = 0.8;
+                                material.metalness = 0.1;
+                                
+                                // Ensure material has proper color
+                                if (!material.color) {
+                                    material.color = new THREE.Color(0xffffff);
+                                }
+                            }
+                            
+                            // For VRM materials, ensure they render properly
+                            if (material.isVRMMaterial || material.name?.includes('VRM')) {
+                                material.alphaTest = 0.001; // Prevent transparency issues
+                                material.side = THREE.DoubleSide; // Render both sides
+                            }
+
+                            // Make materials more responsive to lighting
+                            if (material.emissive) {
+                                material.emissive.multiplyScalar(0.1);
+                            }
+                            
+                            // Force material update to apply changes
+                            material.needsUpdate = true;
+                        });
+                        
+                        console.log(`✅ Configured material for: ${child.name || 'unnamed'} (${materials.length} materials)`);
                         
                     } catch (materialError) {
                         console.warn('⚠️ Could not configure material for:', child.name, materialError.message);
@@ -119,7 +147,65 @@ class AdvancedVRMLoader {
             // Set up bone constraints and limits
         }
 
+        // Debug VRM structure to identify missing parts
+        this.debugVRMStructure(vrm);
+
         console.log('✅ VRM rendering configuration complete (no shadows for compatibility)');
+    }
+
+    debugVRMStructure(vrm) {
+        console.log('🔍 === VRM STRUCTURE DEBUG ===');
+        
+        if (!vrm.scene) {
+            console.error('❌ No VRM scene found!');
+            return;
+        }
+
+        let meshCount = 0;
+        let materialCount = 0;
+        const bodyParts = [];
+        
+        vrm.scene.traverse((child) => {
+            if (child.isMesh) {
+                meshCount++;
+                
+                // Track body parts
+                const name = child.name?.toLowerCase() || 'unnamed';
+                bodyParts.push({
+                    name: child.name || 'unnamed',
+                    visible: child.visible,
+                    materialCount: Array.isArray(child.material) ? child.material.length : 1,
+                    hasGeometry: !!child.geometry,
+                    vertices: child.geometry?.attributes?.position?.count || 0
+                });
+                
+                if (child.material) {
+                    materialCount += Array.isArray(child.material) ? child.material.length : 1;
+                }
+                
+                // Check for specific body parts
+                if (name.includes('hair') || name.includes('head')) {
+                    console.log('👩 Hair/Head part found:', child.name, 'visible:', child.visible);
+                } else if (name.includes('body') || name.includes('torso') || name.includes('chest')) {
+                    console.log('👤 Body part found:', child.name, 'visible:', child.visible);
+                } else if (name.includes('skirt') || name.includes('dress') || name.includes('cloth')) {
+                    console.log('👗 Clothing part found:', child.name, 'visible:', child.visible);
+                } else if (name.includes('arm') || name.includes('hand')) {
+                    console.log('🦾 Arm part found:', child.name, 'visible:', child.visible);
+                }
+            }
+        });
+        
+        console.log(`📊 Total meshes: ${meshCount}, materials: ${materialCount}`);
+        console.log('📝 Body parts inventory:', bodyParts);
+        
+        // Check for humanoid bones
+        if (vrm.humanoid) {
+            const bones = vrm.humanoid.normalizedHumanBones;
+            console.log('🦴 Available bones:', Object.keys(bones || {}));
+        }
+        
+        console.log('🔍 === VRM DEBUG COMPLETE ===');
     }
 
     setupIdleAnimations(vrm) {

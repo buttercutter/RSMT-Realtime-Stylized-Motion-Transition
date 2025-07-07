@@ -4,11 +4,45 @@
  */
 
 class EnhancedCharacterSystem {
+    /**
+     * Proactively replace all problematic materials in a scene graph with MeshBasicMaterial.
+     * This prevents WebGL uniform/shader errors (e.g., uniform3fv) before the first render.
+     * Call this after loading VRM and classroom, before first render.
+     */
+    static fixAllMaterials(root) {
+        if (!root) return;
+        root.traverse((child) => {
+            if (child.isMesh && child.material) {
+                // If material is an array, fix all
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                let replaced = false;
+                for (let i = 0; i < materials.length; ++i) {
+                    const mat = materials[i];
+                    // Replace if not MeshBasicMaterial or has unsupported uniforms
+                    if (!(mat && mat.isMeshBasicMaterial)) {
+                        const safeMat = new (window.THREE ? window.THREE.MeshBasicMaterial : THREE.MeshBasicMaterial)({
+                            color: (mat && mat.color) ? mat.color : 0xffffff,
+                            map: mat && mat.map ? mat.map : null,
+                            skinning: !!mat.skinning,
+                            transparent: !!mat.transparent,
+                            opacity: (typeof mat.opacity === 'number') ? mat.opacity : 1.0
+                        });
+                        materials[i] = safeMat;
+                        replaced = true;
+                        if (child.material.name) safeMat.name = child.material.name + '_safe';
+                    }
+                }
+                if (replaced) {
+                    child.material = Array.isArray(child.material) ? materials : materials[0];
+                }
+            }
+        });
+    }
     constructor(scene, bvhSkeleton) {
         this.scene = scene;
         this.bvhSkeleton = bvhSkeleton;
         this.vrmModel = null;
-        this.vrmAdapter = null;
+        // this.vrmAdapter = null; // Adapter removed
         this.classroomEnvironment = null;
         this.materialExtractor = null;
         this.displayMode = 'textured_skeleton'; // 'skeleton', 'character', 'both', 'textured_skeleton'
@@ -68,28 +102,24 @@ class EnhancedCharacterSystem {
             
             this.vrmModel = gltf.userData.vrm;
             this.currentCharacter = characterPath;
-            
-            // Initialize VRM adapter
-            this.vrmAdapter = new VRMBVHAdapter(this.vrmModel, this.bvhSkeleton);
-            if (this.debugMode) console.log('  VRMBVHAdapter initialized:', this.vrmAdapter);
-            
-            // Set up idle animations like in the chat implementation
-            this.vrmAdapter.setIdleAnimations({
-                breathing: { enabled: true, amplitude: 0.015, frequency: 0.3 },
-                blinking: { enabled: true, interval: 2500, duration: 120 },
-                headMovement: { enabled: true, amplitude: 0.03, frequency: 0.08 },
-                facialExpressions: { enabled: true, currentExpression: 'neutral' }
-            });
-            
-            // Enable camera looking behavior
-            if (this.scene.getObjectByName && this.scene.getObjectByName('camera')) {
-                this.vrmAdapter.lookAtCameraAsIfHuman(this.scene.getObjectByName('camera'));
+            // Expose VRM scene globally for safe traversal
+            if (this.vrmModel && this.vrmModel.scene) {
+                window.vrmCharacter = this.vrmModel.scene;
+                // Proactively fix all materials in VRM scene before first render
+                EnhancedCharacterSystem.fixAllMaterials(this.vrmModel.scene);
             }
             
-            // Scale and position VRM to match BVH skeleton
-            this.vrmModel.scene.scale.setScalar(0.01); // Adjust scale as needed
-            this.vrmModel.scene.position.set(0, 0, 0);
-            this.vrmModel.scene.rotation.set(0, 0, 0);
+            // VRM adapter and T-pose logic removed. VRM will be animated directly from skeleton.
+            
+            // Scale and position VRM to match BVH skeleton coordinate system
+            // DISABLED: Let VRMBVHAdapter handle all positioning to avoid conflicts
+            // const TYPICAL_HIP_HEIGHT_CM = 98.43;
+            // const BVH_TO_METERS_SCALE = 0.01;
+            // const TYPICAL_HIP_HEIGHT_METERS = TYPICAL_HIP_HEIGHT_CM * BVH_TO_METERS_SCALE; // ~0.98m
+            
+            this.vrmModel.scene.scale.setScalar(1.0); // Use normal scale
+            // DISABLED: this.vrmModel.scene.position.set(0, -TYPICAL_HIP_HEIGHT_METERS, 0); // Let VRMBVHAdapter control position
+            // DISABLED: this.vrmModel.scene.rotation.set(0, 0, 0); // Let VRMBVHAdapter control rotation
             
             // Set initial visibility based on display mode
             this.vrmModel.scene.visible = (this.displayMode === 'character' || this.displayMode === 'both');
@@ -110,6 +140,9 @@ class EnhancedCharacterSystem {
                     child.receiveShadow = true;
                 }
             });
+            
+            // Final material fix after all systems are initialized
+            EnhancedCharacterSystem.fixAllMaterials(this.vrmModel.scene);
             
             console.log('✅ VRM character loaded and rigged to BVH skeleton');
             console.log('Character:', this.currentCharacter);
@@ -151,11 +184,11 @@ class EnhancedCharacterSystem {
             });
             
             this.classroomEnvironment = gltf.scene;
-            
+            // Proactively fix all materials in classroom before first render
+            EnhancedCharacterSystem.fixAllMaterials(this.classroomEnvironment);
             // Scale and position the classroom if necessary
             this.classroomEnvironment.scale.setScalar(1); // Adjust scale as needed
             this.classroomEnvironment.position.set(0, 0, 0);
-            
             // Enable shadows for all meshes in the classroom
             this.classroomEnvironment.traverse((child) => {
                 if (child.isMesh) {
@@ -163,10 +196,8 @@ class EnhancedCharacterSystem {
                     child.receiveShadow = true;
                 }
             });
-            
             // Add to scene
             this.scene.add(this.classroomEnvironment);
-            
             console.log('✅ Classroom environment loaded from GLB');
             
         } catch (error) {
@@ -200,27 +231,13 @@ class EnhancedCharacterSystem {
     }
 
     applyBVHFrame(frameData) {
-        // Apply BVH data to VRM character
-        if (this.vrmAdapter && this.vrmModel && frameData) {
-            if (this.debugMode && Math.random() < 0.01) { // Log occasionally to avoid spam
-                console.log('  ECS: Applying BVH frame to VRM. Frame data length:', frameData.length);
-                console.log('  ECS: First 6 values of frameData (root pos/rot):', frameData.slice(0, 6).map(v => v.toFixed(2)));
-            }
-            this.vrmAdapter.applyBVHFrameToVRM(frameData);
-            
-            // Update facial expressions based on motion
-            if (this.facialExpressionSystem) {
-                this.facialExpressionSystem.updateFromMotion(frameData);
-            }
-        }
+        // Adapter logic removed. VRM will be animated directly from skeleton elsewhere.
     }
 
     resetCharacterPosition() {
         if (this.vrmModel) {
-            this.vrmModel.scene.position.set(0, 0, 0);
-            this.vrmModel.scene.rotation.set(0, 0, 0);
-            this.vrmModel.scene.scale.setScalar(0.01);
-            console.log('↺ Character position reset');
+            this.vrmModel.scene.scale.setScalar(1.0); // Use normal scale
+            console.log('↺ Character scale reset to normal');
         }
     }
 
@@ -429,7 +446,7 @@ class EnhancedCharacterSystem {
             this.materialExtractor = null;
         }
         
-        this.vrmAdapter = null;
+        // this.vrmAdapter = null; // Adapter removed
         this.facialExpressionSystem = null;
         this.animationBlender = null;
         

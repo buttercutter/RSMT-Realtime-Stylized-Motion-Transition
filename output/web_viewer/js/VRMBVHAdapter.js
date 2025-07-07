@@ -160,42 +160,43 @@ class VRMBVHAdapter {
     }
 
     createBoneMapping() {
-        // Map BVH joint names from rsmt_showcase_modern.html to VRM humanoid bone names
-        // Based on standard VRM humanoid specification and the specific BVH structure
+        // Map BVH joint names to VRM humanoid bone names
+        // Fixed mapping to match VRM 1.0 humanoid specification
         return {
             // Root
             'Hips': 'hips',
 
-            // Spine chain from rsmt_showcase_modern.html
+            // Spine chain - corrected VRM bone names
             'Chest': 'spine',
-            'Chest2': 'chest',
+            'Chest2': 'chest', 
             'Chest3': 'upperChest',
-            'Chest4': 'neck', // Mapping Chest4 to neck as it's the last segment before Neck in BVH
-            'Neck': 'neck',
+            'Chest4': 'neck', // Chest4 maps to neck in this BVH structure
+            'Neck': 'neck',   // This will be the actual neck bone
             'Head': 'head',
 
-            // Right arm chain from rsmt_showcase_modern.html
-            'RightCollar': 'rightShoulder',
-            'RightShoulder': 'rightUpperArm',
-            'RightElbow': 'rightLowerArm',
-            'RightWrist': 'rightHand',
+            // Right arm chain - corrected VRM bone names
+            'RightCollar': 'rightShoulder',     // Clavicle/shoulder
+            'RightShoulder': 'rightUpperArm',   // Upper arm
+            'RightElbow': 'rightLowerArm',      // Forearm
+            'RightWrist': 'rightHand',          // Hand
 
-            // Left arm chain from rsmt_showcase_modern.html (mirrored)
-            'LeftCollar': 'leftShoulder',
-            'LeftShoulder': 'leftUpperArm',
-            'LeftElbow': 'leftLowerArm',
-            'LeftWrist': 'leftHand',
+            // Left arm chain - corrected VRM bone names
+            'LeftCollar': 'leftShoulder',       // Clavicle/shoulder
+            'LeftShoulder': 'leftUpperArm',     // Upper arm
+            'LeftElbow': 'leftLowerArm',        // Forearm
+            'LeftWrist': 'leftHand',            // Hand
 
-            // Right leg chain from rsmt_showcase_modern.html
-            'RightHip': 'rightUpperLeg',
-            'RightKnee': 'rightLowerLeg',
-            'RightAnkle': 'rightFoot',
-            'RightToe': 'rightToes',
+            // Right leg chain - corrected VRM bone names
+            'RightHip': 'rightUpperLeg',        // Thigh
+            'RightKnee': 'rightLowerLeg',       // Shin
+            'RightAnkle': 'rightFoot',          // Foot
+            'RightToe': 'rightToes',            // Toes
 
-            // Left leg chain from rsmt_showcase_modern.html (mirrored)
-            'LeftHip': 'leftUpperLeg',
-            'LeftKnee': 'leftLowerLeg',
-            'LeftAnkle': 'leftFoot'
+            // Left leg chain - corrected VRM bone names
+            'LeftHip': 'leftUpperLeg',          // Thigh
+            'LeftKnee': 'leftLowerLeg',         // Shin
+            'LeftAnkle': 'leftFoot',            // Foot
+            'LeftToe': 'leftToes'               // Toes
         };
     }
 
@@ -243,74 +244,116 @@ class VRMBVHAdapter {
             if (this.debugMode) console.warn('⚠️ Invalid frame data for VRMBVHAdapter');
             return false;
         }
-        
-        // Apply root position (first 3 values)
-        const rootX = frameData[0] * 0.01; // Scale to match VRM
-        const rootY = frameData[1] * 0.01;
-        const rootZ = frameData[2] * 0.01;
-        
-        // Apply root position to the VRM scene directly
-        this.vrmModel.scene.position.set(rootX, rootY, rootZ);
 
-        // Apply root rotation (next 3 values)
-        const rootRotY = (frameData[3] || 0) * Math.PI / 180;
-        const rootRotX = (frameData[4] || 0) * Math.PI / 180;
-        const rootRotZ = (frameData[5] || 0) * Math.PI / 180;
-        
-        // Apply root rotation to the VRM scene directly
-        this.vrmModel.scene.rotation.order = 'YXZ'; // Ensure correct order
-        this.vrmModel.scene.rotation.set(rootRotX, rootRotY, rootRotZ);
-
-        if (this.debugMode) {
-            console.log(`VRM Root Pos: X=${rootX.toFixed(2)}, Y=${rootY.toFixed(2)}, Z=${rootZ.toFixed(2)}`);
-            console.log(`VRM Root Rot: X=${(rootRotX*180/Math.PI).toFixed(1)}, Y=${(rootRotY*180/Math.PI).toFixed(1)}, Z=${(rootRotZ*180/Math.PI).toFixed(1)}`);
-        }
-
-        // Start from index 6 for joint rotations
-        let channelIndex = 6;
-        
-        // Apply rotations to each mapped bone
-        for (const [bvhJoint, vrmBone] of Object.entries(this.boneMapping)) {
-            const boneData = this.availableBones[bvhJoint];
-            if (!boneData || !boneData.bone) continue; // Skip if bone not available
+        try {
+            // Apply root position (first 3 values) with proper coordinate system conversion
+            const BVH_TO_METERS_SCALE = 0.01;
+            const TYPICAL_HIP_HEIGHT_CM = 98.43;
+            const TYPICAL_HIP_HEIGHT_METERS = TYPICAL_HIP_HEIGHT_CM * BVH_TO_METERS_SCALE;
             
-            const boneNode = boneData.bone;
+            // BVH uses centimeters, VRM uses meters; BVH is Y-up, VRM is Y-up but Z-forward is flipped
+            const rootX = frameData[0] * BVH_TO_METERS_SCALE;
+            const rootY = (frameData[1] * BVH_TO_METERS_SCALE) - TYPICAL_HIP_HEIGHT_METERS;
+            const rootZ = -frameData[2] * BVH_TO_METERS_SCALE; // Flip Z for proper VRM coordinate system
             
-            // Ensure bone rotation order is consistent with BVH
-            boneNode.rotation.order = 'YXZ'; 
+            this.vrmModel.scene.position.set(rootX, rootY, rootZ);
 
-            // Check if we have enough data for this joint
-            if (channelIndex + 3 > frameData.length) { // Changed to > to catch exact match for last joint
-                console.warn(`⚠️ Not enough data for ${bvhJoint} (${vrmBone}). Expected 3 channels, got ${frameData.length - channelIndex}`);
-                break; // Stop processing if not enough data for remaining joints
+            // Apply root rotation (next 3 values) - Enhanced coordinate system conversion
+            const rootRotY = (frameData[3] || 0) * Math.PI / 180; // Yaw first in BVH
+            const rootRotX = (frameData[4] || 0) * Math.PI / 180; // Pitch second
+            const rootRotZ = (frameData[5] || 0) * Math.PI / 180; // Roll third
+            
+            // Apply coordinate system corrections for VRM
+            this.vrmModel.scene.rotation.order = 'YXZ'; // BVH order: Y(yaw), X(pitch), Z(roll)
+            this.vrmModel.scene.rotation.set(-rootRotX, rootRotY, -rootRotZ); // Flip X and Z for VRM coordinate system
+
+            // BVH joint order from the actual file structure (matches rsmt_showcase_modern.html)
+            const bvhJointOrder = [
+                'Hips', 'Chest', 'Chest2', 'Chest3', 'Chest4', 'Neck', 'Head',
+                'RightCollar', 'RightShoulder', 'RightElbow', 'RightWrist',
+                'LeftCollar', 'LeftShoulder', 'LeftElbow', 'LeftWrist',
+                'RightHip', 'RightKnee', 'RightAnkle', 'RightToe',
+                'LeftHip', 'LeftKnee', 'LeftAnkle', 'LeftToe'
+            ];
+
+            // Start from index 6 for joint rotations (after root pos + rot)
+            let channelIndex = 6;
+            
+            // Process joints in BVH file order, not bone mapping order
+            for (const bvhJoint of bvhJointOrder) {
+                // Skip root joint as it's already processed
+                if (bvhJoint === 'Hips') continue;
+                
+                // Check if this BVH joint maps to a VRM bone
+                const vrmBoneName = this.boneMapping[bvhJoint];
+                if (!vrmBoneName) {
+                    // Skip unmapped joints but advance channel index
+                    channelIndex += 3;
+                    continue;
+                }
+                
+                const boneData = this.availableBones[bvhJoint];
+                if (!boneData || !boneData.bone) {
+                    // Skip unavailable bones but advance channel index
+                    channelIndex += 3;
+                    continue;
+                }
+                
+                const boneNode = boneData.bone;
+                
+                // Check if we have enough data for this joint
+                if (channelIndex + 2 >= frameData.length) {
+                    console.warn(`⚠️ Not enough data for ${bvhJoint} (${vrmBoneName}). Frame data length: ${frameData.length}, needed index: ${channelIndex + 2}`);
+                    break;
+                }
+                
+                // BVH rotation order is typically Y, X, Z (yaw, pitch, roll)
+                const rotY = (frameData[channelIndex] || 0) * Math.PI / 180;     // Yaw
+                const rotX = (frameData[channelIndex + 1] || 0) * Math.PI / 180; // Pitch  
+                const rotZ = (frameData[channelIndex + 2] || 0) * Math.PI / 180; // Roll
+                
+                // Apply coordinate system conversion for VRM
+                // VRM uses different coordinate conventions than BVH
+                boneNode.rotation.order = 'YXZ'; // Match BVH rotation order
+                
+                // Apply rotations with coordinate system corrections
+                if (bvhJoint.includes('Right')) {
+                    // Right side bones might need different coordinate mapping
+                    boneNode.rotation.set(-rotX, rotY, -rotZ); // Flip X and Z for right side
+                } else if (bvhJoint.includes('Left')) {
+                    // Left side bones
+                    boneNode.rotation.set(-rotX, -rotY, rotZ); // Different mapping for left side
+                } else {
+                    // Central bones (spine, neck, head)
+                    boneNode.rotation.set(-rotX, rotY, rotZ); // Standard conversion
+                }
+                
+                if (this.debugMode && channelIndex < 15) { // Only log first few bones to avoid spam
+                    console.log(`${bvhJoint} -> ${vrmBoneName}: Y=${(rotY*180/Math.PI).toFixed(1)}, X=${(rotX*180/Math.PI).toFixed(1)}, Z=${(rotZ*180/Math.PI).toFixed(1)}`);
+                }
+                
+                channelIndex += 3;
             }
             
-            // Apply rotation
-            const rotX = (frameData[channelIndex] || 0) * Math.PI / 180;
-            const rotY = (frameData[channelIndex + 1] || 0) * Math.PI / 180;
-            const rotZ = (frameData[channelIndex + 2] || 0) * Math.PI / 180;
-            
-            boneNode.rotation.set(rotX, rotY, rotZ);
-            
-            if (this.debugMode) {
-                console.log(`VRM Bone ${vrmBone} (${bvhJoint}): X=${(rotX*180/Math.PI).toFixed(1)}, Y=${(rotY*180/Math.PI).toFixed(1)}, Z=${(rotZ*180/Math.PI).toFixed(1)}`);
+            // Update VRM using the correct method - this is critical!
+            // VRM models need to be updated with deltaTime, not just humanoid.update()
+            if (this.vrmModel && this.vrmModel.update) {
+                // Use a fixed deltaTime if not provided - this is essential for VRM animation
+                const deltaTime = 1/60; // 60fps
+                this.vrmModel.update(deltaTime);
+            } else if (this.vrmModel.humanoid?.update) {
+                // Fallback for older VRM versions
+                this.vrmModel.humanoid.update();
             }
             
-            channelIndex += 3; // Move to the next joint rotation
-        }            
-        // Update VRM humanoid system
-        if (this.vrmModel.humanoid?.update) {
-            this.vrmModel.humanoid.update();
+            return true;
+            
+        } catch (error) {
+            console.error('❌ Error applying BVH frame to VRM:', error);
+            return false;
         }
-        
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Error applying BVH frame to VRM:', error);
-        return false;
     }
 }
-
 
     // Export for use in other modules
     if (typeof module !== 'undefined' && module.exports) {
