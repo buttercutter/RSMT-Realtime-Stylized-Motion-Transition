@@ -15,7 +15,7 @@ class VRMLightingManager {
         // Lighting configuration presets
         this.presets = {
             classroom: {
-                ambient: { color: 0x404040, intensity: 0.5 },
+                ambient: { color: 0x404040, intensity: 0.8 },
                 directional: { color: 0xffffff, intensity: 1.0, position: [10, 10, 5] },
                 fill: { color: 0xffffff, intensity: 0.5, position: [-5, 5, -5] },
                 accent: { color: 0x87ceeb, intensity: 0.5, position: [0, 8, 0] }
@@ -33,9 +33,9 @@ class VRMLightingManager {
                 accent: { color: 0xff8040, intensity: 0.6, position: [2, 6, 2] }
             },
             soft: {
-                ambient: { color: 0x606060, intensity: 0.8 },
-                directional: { color: 0xffffff, intensity: 0.6, position: [6, 8, 4] },
-                fill: { color: 0xffffff, intensity: 0.4, position: [-3, 5, -2] },
+                ambient: { color: 0x606060, intensity: 1},
+                directional: { color: 0xffffff, intensity: 1, position: [6, 8, 4] },
+                fill: { color: 0xffffff, intensity: 1, position: [-3, 5, -2] },
                 accent: { color: 0xffeecc, intensity: 0.3, position: [0, 6, 0] }
             }
         };
