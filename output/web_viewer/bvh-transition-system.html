@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BVH Transition System</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .title {
+            color: #00d4ff;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid #00d4ff;
+        }
+        .control-group {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .control-group label {
+            min-width: 150px;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+        select, input[type="range"] {
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 1px solid #00d4ff;
+            border-radius: 4px;
+            padding: 8px;
+        }
+        button {
+            background: linear-gradient(45deg, #00d4ff, #0084ff);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 212, 255, 0.3);
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .visualization {
+            width: 100%;
+            height: 400px;
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .joint {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #00d4ff;
+            border-radius: 50%;
+            transition: all 0.05s linear; /* Use linear for smoother animation */
+            box-shadow: 0 0 10px #00d4ff;
+        }
+        .joint-torso {
+            width: 15px;
+            height: 40px;
+            border-radius: 8px; /* Make torso a rounded rectangle */
+        }
+        .joint-root { 
+            background: #ff4444; 
+            width: 16px; 
+            height: 16px; 
+            box-shadow: 0 0 15px #ff4444; 
+        }
+
+        .joint-spine { 
+            background: #44ff44; 
+            width: 10px; 
+            height: 10px; 
+            box-shadow: 0 0 8px #44ff44; 
+        }
+
+        .joint-head { 
+            background: #ffff44; 
+            width: 14px; 
+            height: 14px; 
+            box-shadow: 0 0 12px #ffff44; 
+        }
+
+        .joint-neck { 
+            background: #ff8844; 
+            width: 8px; 
+            height: 8px; 
+        }
+
+        .joint-collar, .joint-shoulder { 
+            background: #8844ff; 
+            width: 10px; 
+            height: 10px; 
+            box-shadow: 0 0 8px #8844ff; 
+        }
+
+        .joint-elbow, .joint-wrist { 
+            background: #4488ff; 
+            width: 8px; 
+            height: 8px; 
+        }
+
+        .joint-hip { 
+            background: #ff44ff; 
+            width: 12px; 
+            height: 12px; 
+            box-shadow: 0 0 10px #ff44ff; 
+        }
+
+        .joint-knee, .joint-ankle { 
+            background: #44ffff; 
+            width: 10px; 
+            height: 10px; 
+        }
+
+        .joint-toe { 
+            background: #ffaa44; 
+            width: 6px; 
+            height: 6px; 
+        }
+        .transition-info {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 5px;
+            border-left: 4px solid #00d4ff;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success { background: rgba(76, 175, 80, 0.2); color: #4caf50; }
+        .status.warning { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+        .status.error { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .communication-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 100, 0, 0.1);
+            border-radius: 5px;
+            border: 1px solid #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">🔄 BVH Transition System</div>
+        <p style="text-align: center; color: #888;">Seamless animation transitions using pose similarity search + interpolation</p>
+        
+        <div id="status" class="status">Ready to initialize...</div>
+        
+        <div class="controls">
+            <h3 style="margin: 0 0 15px 0; color: #00d4ff;">🎮 Transition Controls</h3>
+            
+            <div class="control-group">
+                <label>Current Animation:</label>
+                <select id="currentAnimation">
+                    <option value="walk">Walking</option>
+                    <option value="run">Running</option>
+                    <option value="jump">Jumping</option>
+                    <option value="idle">Idle</option>
+                    <option value="dance">Dancing</option>
+                </select>
+                <button onclick="switchAnimation()">🔄 Switch Animation</button>
+            </div>
+           
+            <div class="control-group">
+                <label>Target Animation:</label>
+                <select id="targetAnimation"></select>
+            </div>
+
+            <div class="control-group">
+                <label>Transition Method:</label>
+                <select id="transitionMethod">
+                    <option value="immediate">Immediate (No Blending)</option>
+                    <option value="crossfade">Cross-fade Interpolation</option>
+                    <option value="smart" selected>Smart Pose Matching + Interpolation</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Transition Duration:</label>
+                <input type="range" id="transitionDuration" min="0.1" max="6.0" step="0.1" value="3.0">
+                <span id="durationValue">3.0s</span>
+            </div>
+            
+            <div class="control-group">
+                <label>Similarity Threshold:</label>
+                <input type="range" id="similarityThreshold" min="0.1" max="1.0" step="0.05" value="0.3">
+                <span id="thresholdValue">0.3</span>
+            </div>
+            
+            <div class="control-group">
+                <button onclick="initializeSystem()">🔧 Initialize System</button>
+                <button onclick="startAnimation()">▶️ Start</button>
+                <button onclick="pauseAnimation()">⏸️ Pause</button>
+                <button onclick="resetAnimation()">⏹️ Reset</button>
+                <button onclick="findTransitionPoints()">🎯 Find Transitions</button>
+                <button onclick="performTransition()">🚀 Perform Transition</button>
+                <button onclick="debugTransition()">🔍 Debug Transition</button>
+            </div>
+        </div>
+       
+        <div class="visualization" id="visualization">
+            <!-- Shared 3D Canvas from parent -->
+            <div id="shared3dContainer" style="width: 100%; height: 100%; position: relative;">
+                <div id="shared3dLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00d4ff; font-weight: bold;">
+                    Connecting to parent 3D scene...
+                </div>
+            </div>
+        </div>
+
+        <div class="transition-info">
+            <h3 style="margin: 0 0 15px 0;">🔄 Transition Information</h3>
+            <div class="metrics">
+                <div class="metric">
+                    <span>Current Animation:</span>
+                    <span id="currentAnimInfo">walk</span>
+                </div>
+                <div class="metric">
+                    <span>Current Frame:</span>
+                    <span id="currentFrameInfo">0</span>
+                </div>
+                <div class="metric">
+                    <span>Transition Progress:</span>
+                    <span id="transitionProgress">0%</span>
+                </div>
+                <div class="metric">
+                    <span>Best Match Distance:</span>
+                    <span id="matchDistance">N/A</span>
+                </div>
+                <div class="metric">
+                    <span>Search Engine:</span>
+                    <span id="searchEngineStatus">Not initialized</span>
+                </div>
+                <div class="metric">
+                    <span>Transition Method:</span>
+                    <span id="methodInfo">Smart Pose Matching</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="communication-panel">
+            <h3 style="margin: 0 0 10px 0; color: #00ff00;">📡 Parent Communication</h3>
+            <div>
+                <button onclick="sendTestMessage()">📤 Send Test Message</button>
+                <button onclick="requestPoseData()">📥 Request Pose Data</button>
+                <button onclick="exportTransitionData()">💾 Export Transitions</button>
+            </div>
+            <div id="messageLog" style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 4px; max-height: 100px; overflow-y: auto; font-size: 12px; font-family: monospace;">
+                Communication log...
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        // Simple 3D Scene Reuser - leverages parent's existing infrastructure
+        class Shared3DVisualization {
+            constructor() {
+                this.parentScene = null;
+                this.parentCamera = null;
+                this.parentRenderer = null;
+                this.localRenderer = null;
+                this.isInitialized = false;
+    
+                console.log('start of class Shared3DVisualization')
+                this.init();
+            }
+            
+            async init() {
+                try {
+                    console.log('🎭 Connecting to parent 3D infrastructure...');
+                    
+                    // Wait for parent to be ready
+                    await this.waitForParent();
+                    
+                    // Get parent's 3D objects
+                    this.parentScene = window.parent.scene;
+                    this.parentCamera = window.parent.camera;
+                    this.parentRenderer = window.parent.renderer;
+                    this.parentApplyBVHFrame = window.parent.applyBVHFrame;
+
+                    if (!this.parentScene || !this.parentCamera || !this.parentApplyBVHFrame) {
+                        throw new Error('Parent 3D scene not available');
+                    }
+                    
+                    // Import THREE.js from parent
+                    const THREE = window.parent.THREE;
+                    if (!THREE) {
+                        throw new Error('THREE.js not available in parent');
+                    }
+                    
+                    // Create our own renderer using parent's scene and camera
+                    await this.createLocalRenderer(THREE);
+                    
+                    // Start our own render loop
+                    this.animate();
+                    
+                    this.isInitialized = true;
+                    document.getElementById('shared3dLoading').style.display = 'none';
+                    
+                    console.log('✅ Successfully connected to parent 3D scene');
+                    transitionSystem.logMessage('🎭 Local 3D renderer connected to parent scene');
+                    
+                } catch (error) {
+                    console.error('❌ Failed to connect to parent 3D:', error);
+                    document.getElementById('shared3dLoading').textContent = `3D Connection Failed: ${error.message}`;
+                    transitionSystem.logMessage(`❌ 3D connection failed: ${error.message}`);
+                }
+            }
+            
+            async waitForParent() {
+                return new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 50; // 5 seconds
+                    
+                    const checkParent = () => {
+                        attempts++;
+                        
+                        if (window.parent && window.parent.scene && window.parent.camera && window.parent.applyBVHFrame) {
+                            resolve();
+                        } else if (attempts >= maxAttempts) {
+                            reject(new Error('Parent 3D scene not ready after 5 seconds'));
+                        } else {
+                            setTimeout(checkParent, 100);
+                        }
+                    };
+                    
+                    checkParent();
+                });
+            }
+            
+            async createLocalRenderer(THREE) {
+                const container = document.getElementById('shared3dContainer');
+                
+                // Create our own WebGL renderer that shares the scene
+                this.localRenderer = new THREE.WebGLRenderer({ 
+                    antialias: true,
+                    alpha: true 
+                });
+                
+                this.localRenderer.setSize(container.clientWidth, container.clientHeight);
+                this.localRenderer.shadowMap.enabled = true;
+                this.localRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                
+                // Set background to match parent or make it slightly different
+                this.localRenderer.setClearColor(0x16213e, 1.0); // Slightly different blue
+                
+                container.appendChild(this.localRenderer.domElement);
+                
+                // Create our own camera positioned differently
+                this.localCamera = new THREE.PerspectiveCamera(
+                    75, 
+                    container.clientWidth / container.clientHeight, 
+                    0.1, 
+                    1000
+                );
+                
+                // Position camera for a good view of the skeleton
+                this.localCamera.position.set(2, 1.2, 2);
+                this.localCamera.lookAt(0, 0.8, 0);
+                
+                // Add simple mouse controls
+                this.setupMouseControls(THREE);
+                
+                console.log('🎥 Local renderer created, sharing parent scene');
+            }
+            
+            setupMouseControls(THREE) {
+                const canvas = this.localRenderer.domElement;
+                let isDragging = false;
+                let previousMouse = { x: 0, y: 0 };
+                
+                canvas.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    previousMouse = { x: e.clientX, y: e.clientY };
+                });
+                
+                canvas.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    
+                    const deltaX = e.clientX - previousMouse.x;
+                    const deltaY = e.clientY - previousMouse.y;
+                    
+                    // Orbit camera around skeleton
+                    const spherical = new THREE.Spherical();
+                    spherical.setFromVector3(this.localCamera.position);
+                    
+                    spherical.theta -= deltaX * 0.01;
+                    spherical.phi += deltaY * 0.01;
+                    spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                    
+                    this.localCamera.position.setFromSpherical(spherical);
+                    this.localCamera.lookAt(0, 0.8, 0);
+                    
+                    previousMouse = { x: e.clientX, y: e.clientY };
+                });
+                
+                canvas.addEventListener('mouseup', () => isDragging = false);
+                canvas.addEventListener('mouseleave', () => isDragging = false);
+                
+                // Zoom with wheel
+                canvas.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    const scale = e.deltaY > 0 ? 1.1 : 0.9;
+                    this.localCamera.position.multiplyScalar(scale);
+                    this.localCamera.position.clampLength(0.5, 8);
+                });
+            }
+           
+            // ✅ ADD THIS METHOD - delegate to parent's applyBVHFrame
+            applyBVHFrame(frameData) {
+                if (this.isInitialized && this.parentApplyBVHFrame) {
+                    // Call the parent's applyBVHFrame function with our data
+                    this.parentApplyBVHFrame(frameData);
+                    
+                    // Debug occasionally
+                    if (Math.random() < 0.01) { // 1% chance
+                        console.log('🎭 Applied BVH frame to parent skeleton:', {
+                            frameDataLength: frameData.length,
+                            rootPos: frameData.slice(0, 3),
+                            rootRot: frameData.slice(3, 6)
+                        });
+                        //transitionSystem.logMessage(`🎭 Transition frame applied to parent skeleton`);
+                    }
+                } else {
+                    console.warn('⚠️ Cannot apply BVH frame - parent connection not ready');
+                    console.log('Debug state:', {
+                        isInitialized: this.isInitialized,
+                        hasParentApplyBVHFrame: !!this.parentApplyBVHFrame,
+                        parentFunctionType: typeof this.parentApplyBVHFrame
+                    });
+                }
+            }
+
+            animate() {
+                if (!this.isInitialized) return;
+                
+                requestAnimationFrame(() => this.animate());
+                
+                // Render the SAME scene as parent, but with our own camera
+                if (this.parentScene && this.localCamera && this.localRenderer) {
+                    this.localRenderer.render(this.parentScene, this.localCamera);
+                }
+            }
+            
+            // We don't need applyBVHFrame because the parent already updates the shared scene!
+            // The skeleton in the shared scene gets updated automatically by the parent.
+            
+            resize() {
+                if (!this.isInitialized) return;
+                
+                const container = document.getElementById('shared3dContainer');
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                
+                this.localCamera.aspect = width / height;
+                this.localCamera.updateProjectionMatrix();
+                this.localRenderer.setSize(width, height);
+            }
+        }
+        
+        // Create shared 3D visualization
+        window.shared3D = new Shared3DVisualization();
+        
+        // Handle resize
+        window.addEventListener('resize', () => {
+            if (window.shared3D) {
+                window.shared3D.resize();
+            }
+        });
+        
+        // BVH Transition System - Independent Implementation
+        class BVHTransitionSystem {
+            constructor() {
+                this.currentAnimation = 'walk';
+                this.currentAnimationId = 'walk';
+                this.currentFrame = 0;
+                this.targetAnimation = 'jump';
+                this.targetFrame = 0;
+                this.isPlaying = false;
+                this.isTransitioning = false;
+                this.isLocalTransition = false; // ✅ New flag to control parent data override
+                this.transitionProgress = 0;
+                this.transitionDuration = 1.0;
+                this.currentTransitionPose = null;
+                this.similarityThreshold = 0.3;
+                this.animations = new Map();
+                this.animationId = null;
+                this.lastTime = 0;
+                this.searchEngine = null;
+                this.motionPath = [];
+                this.maxPathLength = 100;
+               
+                // ✅ Add these for parent communication
+                this.currentPoseFromParent = null;
+                this.currentFrameFromParent = null;
+                this.currentAnimationFromParent = null;
+                
+                this.initializeAnimations();
+                this.setupEventListeners();
+                this.setupParentCommunication();
+            
+                this.parentVisualization = null;
+                this.setupParentVisualization();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('transitionDuration').addEventListener('input', (e) => {
+                    this.transitionDuration = parseFloat(e.target.value);
+                    document.getElementById('durationValue').textContent = `${this.transitionDuration}s`;
+                });
+                
+                document.getElementById('similarityThreshold').addEventListener('input', (e) => {
+                    this.similarityThreshold = parseFloat(e.target.value);
+                    document.getElementById('thresholdValue').textContent = e.target.value;
+                });
+            }
+            
+            setupParentCommunication() {
+                // Listen for messages from parent window
+                window.addEventListener('message', (event) => {
+                    this.handleParentMessage(event);
+                });
+                
+                // Notify parent that we're ready
+                this.sendToParent('ready', {
+                    system: 'BVH Transition System',
+                    version: '1.0',
+                    capabilities: ['pose_search', 'interpolation', 'transition_detection']
+                });
+            }
+            
+            handleParentMessage(event) {
+                const { type, data } = event.data;
+                
+                switch (type) {
+                    case 'pose_data':
+                        this.handlePoseData(data);
+                        break;
+                    case 'animation_frame':
+                        this.handleAnimationFrame(data);
+                        break;
+                    case 'bvh_data':
+                        this.handleBVHData(data);
+                        break;
+                    case 'animation_command':
+                        this.handleAnimationCommand(data);
+                        break;
+                    case 'get_transitions':
+                        this.sendTransitionData();
+                        break;
+                    // NEW: This is the required response for the handshake
+                    case 'ping':
+                        // Parent is asking if we are ready. We are, so we respond.
+                        this.sendToParent('pong', { status: 'ready' });
+                        break;
+                    case 'ping_ready':
+                        this.logMessage("Received ready-ping from parent. Responding...");
+                        this.sendToParent('ready', {
+                            system: 'BVH Transition System',
+                            version: '1.0'
+                        });
+                        break;
+                    case 'parent_scene_ready':
+                        this.logMessage('🎉 Parent 3D scene is ready! Initializing local renderer.');
+                        if (window.shared3D) {
+                            window.shared3D.init();
+                        }
+                        break;
+                    default:
+                        this.logMessage(`Received: ${type}`);
+                }
+            }
+            
+            sendToParent(messageType, data) {
+                window.parent.postMessage({
+                    source: 'bvh-transition-system',
+                    type: messageType,
+                    data: data,
+                    timestamp: Date.now()
+                }, '*');
+            }
+            
+            logMessage(message) {
+                const log = document.getElementById('messageLog');
+                const timestamp = new Date().toLocaleTimeString();
+                log.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+                log.scrollTop = log.scrollHeight;
+            }
+            
+            initializeAnimations() {
+                // This function now only sets up the UI placeholders.
+                // The actual animation data will be sent by the parent window.
+                const currentSelect = document.getElementById('currentAnimation');
+                const targetSelect = document.getElementById('targetAnimation');
+                currentSelect.innerHTML = '<option>Waiting for data...</option>';
+                targetSelect.innerHTML = '<option>Waiting for data...</option>';
+            }
+         
+            debugAnimationData() {
+                this.logMessage(`🔍 ANIMATION DATA DEBUG:`);
+                this.logMessage(`- Total animations loaded: ${this.animations.size}`);
+                
+                for (const [animId, anim] of this.animations) {
+                    const firstPose = anim.poses[0];
+                    const lastPose = anim.poses[anim.poses.length - 1];
+                    const midPose = anim.poses[Math.floor(anim.poses.length / 2)];
+                    
+                    // Calculate movement variance to see if animations are actually different
+                    let variance = 0;
+                    for (let i = 0; i < Math.min(6, firstPose.length); i++) {
+                        variance += Math.abs(firstPose[i] - lastPose[i]);
+                    }
+                    
+                    this.logMessage(`  📁 ${animId}:`);
+                    this.logMessage(`    - Frames: ${anim.poses.length}, FPS: ${anim.fps}`);
+                    this.logMessage(`    - Root movement variance: ${variance.toFixed(4)}`);
+                    this.logMessage(`    - First frame root: [${firstPose.slice(0, 6).map(v => v.toFixed(2)).join(', ')}]`);
+                    this.logMessage(`    - Last frame root: [${lastPose.slice(0, 6).map(v => v.toFixed(2)).join(', ')}]`);
+                }
+            }
+
+            debugCurrentState() {
+                this.logMessage(`🎭 CURRENT STATE DEBUG:`);
+                this.logMessage(`- currentAnimationId: "${this.currentAnimationId}"`);
+                this.logMessage(`- currentFrame: ${this.currentFrame.toFixed(2)}`);
+                this.logMessage(`- isPlaying: ${this.isPlaying}`);
+                this.logMessage(`- isTransitioning: ${this.isTransitioning}`);
+                this.logMessage(`- isLocalTransition: ${this.isLocalTransition}`);
+                
+                const currentAnim = this.animations.get(this.currentAnimationId);
+                if (currentAnim) {
+                    const pose = this.getCurrentPose();
+                    this.logMessage(`- Animation exists: ✅ (${currentAnim.poses.length} frames)`);
+                    this.logMessage(`- Current pose root: [${pose.slice(0, 6).map(v => v.toFixed(2)).join(', ')}]`);
+                } else {
+                    this.logMessage(`- Animation exists: ❌`);
+                }
+                
+                // Check UI state
+                const currentSelect = document.getElementById('currentAnimation');
+                const targetSelect = document.getElementById('targetAnimation');
+                this.logMessage(`- Current UI selection: "${currentSelect.value}"`);
+                this.logMessage(`- Target UI selection: "${targetSelect.value}"`);
+            }
+
+            debugPoseComparison() {
+                const anim1Name = document.getElementById('currentAnimation').value;
+                const anim2Name = document.getElementById('targetAnimation').value;
+                
+                if (!anim1Name || !anim2Name || anim1Name === anim2Name) {
+                    this.logMessage('❌ Need different animations selected for comparison');
+                    return;
+                }
+                
+                const anim1 = this.animations.get(anim1Name);
+                const anim2 = this.animations.get(anim2Name);
+                
+                if (!anim1 || !anim2) {
+                    this.logMessage('❌ One or both animations not found');
+                    return;
+                }
+                
+                this.logMessage(`🔄 POSE COMPARISON: ${anim1Name} vs ${anim2Name}`);
+                
+                // Compare first frames
+                const pose1 = anim1.poses[0];
+                const pose2 = anim2.poses[0];
+                
+                let totalDiff = 0;
+                let maxDiff = 0;
+                let maxDiffIndex = 0;
+                
+                for (let i = 0; i < Math.min(pose1.length, pose2.length); i++) {
+                    const diff = Math.abs(pose1[i] - pose2[i]);
+                    totalDiff += diff;
+                    if (diff > maxDiff) {
+                        maxDiff = diff;
+                        maxDiffIndex = i;
+                    }
+                }
+                
+                this.logMessage(`- Total difference: ${totalDiff.toFixed(4)}`);
+                this.logMessage(`- Average difference: ${(totalDiff / pose1.length).toFixed(4)}`);
+                this.logMessage(`- Max difference: ${maxDiff.toFixed(4)} at index ${maxDiffIndex}`);
+                
+                // Compare root motion specifically
+                const rootDiff = Math.sqrt(
+                    Math.pow(pose1[0] - pose2[0], 2) + 
+                    Math.pow(pose1[1] - pose2[1], 2) + 
+                    Math.pow(pose1[2] - pose2[2], 2)
+                );
+                this.logMessage(`- Root position difference: ${rootDiff.toFixed(4)}`);
+            }
+
+            debugTransition() {
+                this.logMessage(`🔍 TRANSITION DEBUG:`);
+                this.logMessage(`- window.shared3D exists: ${!!window.shared3D}`);
+                this.logMessage(`- window.shared3D.isInitialized: ${window.shared3D?.isInitialized}`);
+                this.logMessage(`- parent applyBVHFrame: ${typeof window.shared3D?.parentApplyBVHFrame}`);
+                this.logMessage(`- parent scene: ${!!window.shared3D?.parentScene}`);
+                this.logMessage(`- isTransitioning: ${this.isTransitioning}`);
+                this.logMessage(`- isLocalTransition: ${this.isLocalTransition}`);
+                this.logMessage(`- transitionProgress: ${(this.transitionProgress * 100).toFixed(1)}%`);
+                this.logMessage(`- currentFrame: ${this.currentFrame.toFixed(2)}`);
+                this.logMessage(`- transitionDuration: ${this.transitionDuration}s`);
+                this.logMessage(`- has currentTransitionPose: ${!!this.currentTransitionPose}`);
+                this.logMessage(`- has transitionSource: ${!!this.transitionSource}`);
+                this.logMessage(`- has transitionTarget: ${!!this.transitionTarget}`);
+            
+                if (this.currentTransitionPose) {
+                    this.logMessage(`- transition pose root: [${this.currentTransitionPose.slice(0, 6).map(v => v.toFixed(2)).join(', ')}]`);
+                }
+            }
+
+            async performTransition() {
+                const targetAnimationId = document.getElementById('targetAnimation').value;
+                const transitionMethod = document.getElementById('transitionMethod').value;
+                
+                if (!targetAnimationId || targetAnimationId === this.currentAnimationId) {
+                    this.updateStatus("Please select a different target animation.", "warning");
+                    return;
+                }
+                
+                // ✅ Check if target animation exists
+                if (!this.animations.has(targetAnimationId)) {
+                    this.updateStatus(`Animation "${targetAnimationId}" not found. Available: ${Array.from(this.animations.keys()).join(', ')}`, 'error');
+                    return;
+                }
+                
+                this.logMessage(`🚀 Starting transition: ${this.currentAnimationId} → ${targetAnimationId} (${transitionMethod})`);
+                
+                // ✅ CRITICAL: Stop parent data interference
+                this.isLocalTransition = true;
+                
+                try {
+                    switch (transitionMethod) {
+                        case 'immediate':
+                            this.sendToParent('transition_start'); // Tell parent to pause its animation
+                            await this.immediateTransition(targetAnimationId);
+                            break;
+                        case 'crossfade':
+                            this.sendToParent('transition_start'); // Tell parent to pause its animation
+                            await this.crossfadeTransition(targetAnimationId);
+                            break;
+                        case 'smart':
+                            this.sendToParent('transition_start'); // Tell parent to pause its animation
+                            await this.smartTransition(targetAnimationId);
+                            break;
+                    }
+                    
+                } catch (error) {
+                    this.updateStatus(`Transition failed: ${error.message}`, 'error');
+                    this.logMessage(`❌ Transition error: ${error.message}`);
+                    this.isLocalTransition = false; // Reset on error
+                }
+            }
+
+            async initializeSystem() {
+                this.updateStatus('Initializing transition system...', 'warning');
+                
+                try {
+                    // Initialize pose search engine
+                    this.searchEngine = new SimplePoseSearchEngine();
+                    
+                    // Index all animations
+                    const animationData = [];
+                    for (const [id, animation] of this.animations) {
+                        animationData.push({
+                            animationId: id,
+                            poses: animation.poses,
+                            timestamps: animation.poses.map((_, i) => i / animation.fps)
+                        });
+                    }
+                    
+                    await this.searchEngine.indexAnimations(animationData);
+                    
+                    document.getElementById('searchEngineStatus').textContent = 'Ready';
+                    this.updateStatus('System initialized successfully!', 'success');
+                    
+                    // Notify parent
+                    this.sendToParent('system_ready', {
+                        animations: Array.from(this.animations.keys()),
+                        totalPoses: animationData.reduce((sum, anim) => sum + anim.poses.length, 0)
+                    });
+                    
+                } catch (error) {
+                    this.updateStatus(`Initialization failed: ${error.message}`, 'error');
+                    document.getElementById('searchEngineStatus').textContent = 'Failed';
+                }
+            }
+            
+            async switchAnimation() {
+                const targetAnimation = document.getElementById('currentAnimation').value;
+                const transitionMethod = document.getElementById('transitionMethod').value;
+                const targetAnimationId = document.getElementById('targetAnimation').value;
+                
+                if (targetAnimationId === this.currentAnimationId) {
+                    this.logMessage('Target animation is the same as current. No switch needed.');
+                    return;
+                }
+               
+                // ✅ Check if target animation exists
+                if (!this.animations.has(targetAnimationId)) {
+                    this.updateStatus(`Animation "${targetAnimationId}" not found. Available: ${Array.from(this.animations.keys()).join(', ')}`, 'error');
+                    return;
+                }
+
+                this.logMessage(`Switching from ${this.currentAnimationId} to ${targetAnimationId} using ${transitionMethod}`);
+                
+                // ✅ CRITICAL: Temporarily stop parent data updates during local transitions
+                this.isLocalTransition = true;
+
+                this.updateStatus(`Switching to ${targetAnimationId}...`, 'warning');
+                
+                try {
+                    const transitionData = {
+                        from: this.currentAnimationId,
+                        to: targetAnimationId,
+                        method: transitionMethod,
+                        duration: this.transitionDuration,
+                        threshold: this.similarityThreshold
+                    };
+                    
+                    switch (transitionMethod) {
+                        case 'immediate':
+                            await this.immediateTransition(targetAnimationId);
+                            break;
+                        case 'crossfade':
+                            await this.crossfadeTransition(targetAnimationId);
+                            break;
+                        case 'smart':
+                            await this.smartTransition(targetAnimationId);
+                            break;
+                    }
+                    
+                    this.updateStatus(`Switched to ${targetAnimationId}`, 'success');
+                    
+                    // Notify parent
+                    this.sendToParent('transition_complete', transitionData);
+                    
+                } catch (error) {
+                    this.updateStatus(`Transition failed: ${error.message}`, 'error');
+                }
+            }
+           
+            async immediateTransition(targetAnimationId) {
+                // ✅ Properly set the new animation
+                this.currentAnimationId = targetAnimationId;
+                this.currentFrame = 0;
+                
+                // ✅ Reset transition flags immediately for immediate transitions
+                this.isTransitioning = false;
+                this.isLocalTransition = false;
+                this.transitionProgress = 0;
+                
+                document.getElementById('methodInfo').textContent = 'Immediate (No Blending)';
+                document.getElementById('transitionProgress').textContent = '0%';
+                
+                this.logMessage(`✅ Immediate transition to ${targetAnimationId} complete`);
+            }
+
+            async crossfadeTransition(targetAnimationId) {
+                const sourcePose = this.getCurrentPose();
+                const targetAnim = this.animations.get(targetAnimationId);
+
+                if (!targetAnim) {
+                    throw new Error(`Animation not found: ${targetAnimationId}`);
+                }
+
+                // This is the critical part that was missing.
+                // We set the source and target poses BEFORE enabling the transition flag.
+                this.transitionSource = { animId: this.currentAnimationId, pose: sourcePose };
+                this.transitionTarget = { animId: targetAnimationId, pose: targetAnim.poses[0] }; // Cross-fade always starts from frame 0
+                
+                this.isTransitioning = true;
+                this.transitionProgress = 0;
+               
+                // ✅ CRITICAL FIX: Ensure animation is playing during transition
+                if (!this.isPlaying) {
+                    this.startAnimation();
+                }
+                
+                this.updateStatus(`Cross-fading to ${targetAnimationId}...`, 'success');
+                document.getElementById('methodInfo').textContent = 'Cross-fade Interpolation';
+            }
+
+            async smartTransition(targetAnimationId) {
+                if (!this.searchEngine) {
+                    throw new Error('Search engine not initialized');
+                }
+                
+                // Get current pose
+                const currentPose = this.getCurrentPose();
+                
+                // Find best matching pose in target animation
+                const results = await this.searchEngine.searchSimilarPoses(
+                    currentPose, 
+                    targetAnimationId, 
+                    5
+                );
+                
+                if (results.length === 0) {
+                    throw new Error('No suitable transition point found');
+                }
+                
+                const bestMatch = results[0];
+                
+                // Check if match is good enough
+                if (bestMatch.distance > this.similarityThreshold) {
+                    this.logMessage(`Warning: Best match distance ${bestMatch.distance.toFixed(4)} exceeds threshold ${this.similarityThreshold}`);
+                }
+                
+                const sourcePose = this.getCurrentPose();
+
+                const targetAnim = this.animations.get(targetAnimationId);
+
+                if (!targetAnim) {
+                    throw new Error(`Animation not found: ${targetAnimationId}`);
+                }
+
+                // The pose of the best-matched frame will be the END of our transition
+                const targetPose = targetAnim.poses[bestMatch.frameIndex];
+
+                // Define the source and target objects BEFORE starting the transition.
+                this.transitionSource = { animId: this.currentAnimationId, pose: sourcePose };
+                this.transitionTarget = { animId: targetAnimationId, pose: targetPose, frameIndex: bestMatch.frameIndex };
+
+                // Start transition to best matching frame
+                this.targetAnimation = targetAnimationId;
+                this.targetFrame = bestMatch.frameIndex;
+                this.isTransitioning = true;
+                this.transitionProgress = 0;
+               
+                // ✅ CRITICAL FIX: Ensure animation is playing during transition
+                if (!this.isPlaying) {
+                    this.startAnimation();
+                }
+
+                document.getElementById('methodInfo').textContent = 'Smart Pose Matching + Interpolation';
+                document.getElementById('matchDistance').textContent = bestMatch.distance.toFixed(4);
+                
+                this.logMessage(`Transitioning to ${targetAnimationId} frame ${bestMatch.frameIndex} (distance: ${bestMatch.distance.toFixed(4)})`);
+                
+                // Notify parent of transition details
+                this.sendToParent('transition_found', {
+                    targetAnimationId,
+                    targetFrame: bestMatch.frameIndex,
+                    distance: bestMatch.distance,
+                    allMatches: results
+                });
+            }
+            
+            async findTransitionPoints() {
+                if (!this.searchEngine) {
+                    this.updateStatus('Search engine not initialized', 'error');
+                    return;
+                }
+                
+                this.updateStatus('Finding transition points...', 'warning');
+                
+                const currentPose = this.getCurrentPose();
+                const allTransitions = [];
+                
+                // Find transitions to all other animations
+                for (const [animId, animation] of this.animations) {
+                    if (animId !== this.currentAnimationId) {
+                        const results = await this.searchEngine.searchSimilarPoses(currentPose, animId, 3);
+                        allTransitions.push({
+                            animation: animId,
+                            matches: results
+                        });
+                    }
+                }
+                
+                this.updateStatus(`Found ${allTransitions.length} potential transitions`, 'success');
+                
+                // Send results to parent
+                this.sendToParent('transition_analysis', {
+                    currentAnimation: this.currentAnimation,
+                    currentFrame: this.currentFrame,
+                    transitions: allTransitions
+                });
+                
+                this.logMessage(`Analyzed transitions: ${allTransitions.map(t => `${t.animation}(${t.matches.length})`).join(', ')}`);
+            }
+            
+            startAnimation() {
+                if (this.isPlaying) return;
+                
+                this.isPlaying = true;
+                this.lastTime = performance.now();
+                this.animate();
+                
+                this.sendToParent('playback_started', { animation: this.currentAnimation });
+            }
+            
+            pauseAnimation() {
+                this.isPlaying = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                
+                this.sendToParent('playback_paused', { animation: this.currentAnimation, frame: this.currentFrame });
+            }
+            
+            resetAnimation() {
+                this.pauseAnimation();
+                this.currentFrame = 0;
+                this.isTransitioning = false;
+                this.transitionProgress = 0;
+                this.motionPath = [];
+                this.updateVisualization();
+                
+                this.sendToParent('playback_reset', { animation: this.currentAnimation });
+            }
+            
+            animate() {
+                if (!this.isPlaying) return;
+                
+                const currentTime = performance.now();
+                const deltaTime = (currentTime - this.lastTime) / 1000;
+                this.lastTime = currentTime;
+               
+                // Always advance the current animation's frame, even during a transition.
+                // This ensures the "source" pose is dynamic, not static.
+                const anim = this.animations.get(this.currentAnimationId);
+                if (anim) {
+                    this.currentFrame = (this.currentFrame + deltaTime * anim.fps) % anim.poses.length;
+                }
+
+                let final_pose;  // The pose to be rendered this frame.
+
+                if (this.isTransitioning) {
+                    // ✅ Calculate transition pose and store it
+                    final_pose = this.updateTransition(deltaTime);
+                    this.currentTransitionPose = final_pose; // Store for visualization
+                } else {
+                    // ✅ Clear transition pose when not transitioning
+                    this.currentTransitionPose = null;
+                    final_pose = this.updateNormalAnimation(deltaTime);
+                }
+                
+                // ✅ Update visualization AFTER calculating poses
+                this.updateVisualization();
+                
+                // Send pose to parent
+                if (final_pose) {
+                    this.sendToParent('pose_update', { pose: Array.from(final_pose) });
+                }
+                
+                this.animationId = requestAnimationFrame(() => this.animate());
+            }
+
+            updateNormalAnimation(deltaTime) {
+                const anim = this.animations.get(this.currentAnimationId);
+                
+                // Safety check: if there's no animation or it has no poses, return a default pose.
+                if (!anim || anim.poses.length === 0) {
+                    return new Float32Array(69).fill(0); 
+                }
+                
+                // Advance the frame counter.
+                // The modulo (%) operator ensures the animation loops.
+                this.currentFrame = (this.currentFrame + deltaTime * anim.fps) % anim.poses.length;
+                
+                // Return the pose at the new, calculated frame.
+                return anim.poses[Math.floor(this.currentFrame)];
+            }
+
+            // The `updateTransition` function handles the interpolation for both crossfade and smart methods
+            updateTransition(deltaTime) {
+                this.transitionProgress += deltaTime / this.transitionDuration;
+                let t = Math.min(this.transitionProgress, 1.0);
+                
+                // Apply smooth easing (ease-in-out cubic)
+                t = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                
+                // ✅ Verify we have valid source and target poses
+                if (!this.transitionSource || !this.transitionTarget) {
+                    this.logMessage('❌ Missing transition source or target!');
+                    this.isTransitioning = false;
+                    this.isLocalTransition = false;
+                    return new Float32Array(69).fill(0);
+                }
+                
+                const interpolatedPose = new Float32Array(this.transitionSource.pose.length);
+                for (let i = 0; i < interpolatedPose.length; i++) {
+                    interpolatedPose[i] = (1 - t) * this.transitionSource.pose[i] + t * this.transitionTarget.pose[i];
+                }
+                
+                // Update progress display
+                const progressPercent = Math.round(this.transitionProgress * 100);
+                document.getElementById('transitionProgress').textContent = `${progressPercent}%`;
+                
+                // ✅ Debug logging (occasional)
+                if (progressPercent % 20 === 0 && Math.random() < 0.1) { // Every 20% with 10% chance
+                    this.logMessage(`🔄 Transition progress: ${progressPercent}% (t=${t.toFixed(2)})`);
+                }
+                
+                if (this.transitionProgress >= 1.0) {
+                    // ✅ Transition complete - reset all flags
+                    this.isTransitioning = false;
+                    this.isLocalTransition = false;
+                    this.transitionProgress = 0;
+                    
+                    // Set the current animation state
+                    this.currentAnimationId = this.transitionTarget.animId;
+                    this.currentFrame = this.transitionTarget.frameIndex || 0;
+                    
+                    this.updateStatus(`✅ Transition to ${this.currentAnimationId} complete.`, 'success');
+                    document.getElementById('transitionProgress').textContent = '0%';
+                    
+                    this.logMessage(`🎯 Transition completed. Now playing: ${this.currentAnimationId}`);
+            
+                    // *** SEND COMPLETION MESSAGE TO PARENT ***
+                    const finalAnimId = this.transitionTarget.animId;
+                    this.sendToParent('transition_complete', { to: finalAnimId });
+                    this.updateStatus(`✅ Transition to ${finalAnimId} complete.`, 'success');
+
+                    // ✅ Clean up transition objects
+                    this.transitionSource = null;
+                    this.transitionTarget = null;
+                }
+                
+                return interpolatedPose;
+            }
+
+            getCurrentPose() {
+                // If a transition is in progress, return the interpolated pose.
+                if (this.isTransitioning && this.currentTransitionPose) {
+                    return this.currentTransitionPose;
+                }
+
+                const animation = this.animations.get(this.currentAnimationId);
+                
+                // CRITICAL FIX: If animation or poses are missing, return a default array.
+                if (!animation || !animation.poses || animation.poses.length === 0) {
+                    return new Float32Array(69).fill(0); // Return a safe, zeroed pose.
+                }
+                
+                const frameIndex = Math.floor(this.currentFrame);
+                const nextFrameIndex = (frameIndex + 1) % animation.poses.length;
+                const t = this.currentFrame - frameIndex;
+                
+                // Linear interpolation between current and next frame
+                const currentFramePose = animation.poses[frameIndex];
+                const nextFramePose = animation.poses[nextFrameIndex];
+                
+                const interpolatedPose = new Float32Array(currentFramePose.length);
+                for (let i = 0; i < currentFramePose.length; i++) {
+                    interpolatedPose[i] = currentFramePose[i] + (nextFramePose[i] - currentFramePose[i]) * t;
+                }
+                
+                return interpolatedPose;
+            }
+      
+
+            getCurrentPose_new() {
+                const sourceAnim = this.animations.get(this.currentAnimationId);
+                if (!sourceAnim) return new Float32Array(72).fill(0);
+
+                const sourcePose = sourceAnim.poses[Math.floor(this.currentFrame)];
+
+                if (this.isTransitioning) {
+                    let t = Math.min(this.transitionProgress, 1.0);
+                    // Apply smooth easing
+                    t = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+                    const targetPose = this.transitionTarget.pose;
+                    const interpolatedPose = new Float32Array(sourcePose.length);
+
+                    // --- EULER TO QUATERNION CONVERSION (Simplified) ---
+                    const eulerToQuat = (x, y, z) => {
+                        const cx = Math.cos(x * 0.5), sx = Math.sin(x * 0.5);
+                        const cy = Math.cos(y * 0.5), sy = Math.sin(y * 0.5);
+                        const cz = Math.cos(z * 0.5), sz = Math.sin(z * 0.5);
+                        return [
+                            sx * cy * cz - cx * sy * sz, // qx
+                            cx * sy * cz + sx * cy * sz, // qy
+                            cx * cy * sz - sx * sy * cz, // qz
+                            cx * cy * cz + sx * sy * sz  // qw
+                        ];
+                    };
+
+                    // --- SLERP (Spherical Linear Interpolation) ---
+                    const slerp = (q1, q2, t) => {
+                        let dot = q1[0]*q2[0] + q1[1]*q2[1] + q1[2]*q2[2] + q1[3]*q2[3];
+                        if (dot < 0) {
+                            q2 = q2.map(v => -v);
+                            dot = -dot;
+                        }
+                        if (dot > 0.9995) {
+                           return q1.map((v, i) => v + t * (q2[i] - v));
+                        }
+                        const theta_0 = Math.acos(dot);
+                        const theta = theta_0 * t;
+                        const sin_theta = Math.sin(theta);
+                        const sin_theta_0 = Math.sin(theta_0);
+                        const s0 = Math.cos(theta) - dot * sin_theta / sin_theta_0;
+                        const s1 = sin_theta / sin_theta_0;
+                        return q1.map((v, i) => (s0 * v) + (s1 * q2[i]));
+                    };
+
+                    // --- QUATERNION TO EULER CONVERSION (YXZ order) ---
+                    const quatToEuler = (q) => {
+                        const [x, y, z, w] = q;
+                        const t0 = 2 * (w * x + y * z);
+                        const t1 = 1 - 2 * (x * x + y * y);
+                        const roll_x = Math.atan2(t0, t1);
+
+                        let t2 = 2 * (w * y - z * x);
+                        t2 = t2 > 1 ? 1 : (t2 < -1 ? -1 : t2);
+                        const pitch_y = Math.asin(t2);
+
+                        const t3 = 2 * (w * z + x * y);
+                        const t4 = 1 - 2 * (y * y + z * z);
+                        const yaw_z = Math.atan2(t3, t4);
+                        return [roll_x, pitch_y, yaw_z];
+                    };
+
+                    // Interpolate root position linearly
+                    for (let i = 0; i < 6; i++) {
+                        interpolatedPose[i] = (1 - t) * (sourcePose[i] || 0) + t * (targetPose[i] || 0);
+                    }
+
+                    // Interpolate all other joint rotations using Quaternions
+                    for (let i = 6; i < sourcePose.length; i += 3) {
+                        if (i + 2 >= sourcePose.length) break;
+
+                        // Convert source and target Euler angles to radians
+                        const sourceRad = [ (sourcePose[i] || 0) * Math.PI/180, (sourcePose[i+1] || 0) * Math.PI/180, (sourcePose[i+2] || 0) * Math.PI/180 ];
+                        const targetRad = [ (targetPose[i] || 0) * Math.PI/180, (targetPose[i+1] || 0) * Math.PI/180, (targetPose[i+2] || 0) * Math.PI/180 ];
+
+                        // Convert to Quaternions
+                        const q1 = eulerToQuat(sourceRad[0], sourceRad[1], sourceRad[2]);
+                        const q2 = eulerToQuat(targetRad[0], targetRad[1], targetRad[2]);
+
+                        // Perform SLERP
+                        const q_interp = slerp(q1, q2, t);
+
+                        // Convert back to Euler angles in degrees
+                        const e_interp = quatToEuler(q_interp).map(v => v * 180/Math.PI);
+
+                        interpolatedPose[i] = e_interp[0];
+                        interpolatedPose[i+1] = e_interp[1];
+                        interpolatedPose[i+2] = e_interp[2];
+                    }
+                    return interpolatedPose;
+                }
+
+                return sourcePose;
+            }
+
+            setupParentVisualization() {
+                // Check if parent has the visualization functions
+                try {
+                    console.log('🔍 Checking parent window access...');
+                    console.log('- window.parent exists:', !!window.parent);
+                    console.log('- window.parent !== window:', window.parent !== window);
+                    
+                    if (window.parent && window.parent !== window) {
+                        console.log('🔍 Checking parent functions...');
+                        console.log('- applyBVHFrame:', typeof window.parent.applyBVHFrame);
+                        console.log('- skeletonGroup:', !!window.parent.skeletonGroup);
+                        console.log('- jointMeshes:', !!window.parent.jointMeshes);
+                        
+                        if (window.parent.applyBVHFrame) {
+                            this.parentVisualization = {
+                                applyBVHFrame: window.parent.applyBVHFrame,
+                                updateVisualizationFromPose: window.parent.updateVisualizationFromPose || this.createProxyVisualization(),
+                                skeletonGroup: window.parent.skeletonGroup,
+                                jointMeshes: window.parent.jointMeshes,
+                                bvhScale: window.parent.bvhScale || 0.01,
+                                scene: window.parent.scene,
+                                camera: window.parent.camera,
+                                renderer: window.parent.renderer,
+                                getSkeletonState: window.parent.getSkeletonState
+                            };
+                            this.logMessage('✅ Connected to parent 3D visualization system');
+                            
+                            // Test the connection
+                            const skeletonState = this.parentVisualization.getSkeletonState?.();
+                            if (skeletonState) {
+                                this.logMessage(`🎭 Parent skeleton: ${skeletonState.jointCount} joints, frame ${skeletonState.currentFrame}`);
+                            }
+                            
+                            return;
+                        } else {
+                            this.logMessage('❌ Parent applyBVHFrame function not found');
+                        }
+                    } else {
+                        this.logMessage('❌ No valid parent window detected');
+                    }
+                    
+                    this.logMessage('⚠️ Parent visualization not available, using local 2D fallback');
+                    
+                } catch (error) {
+                    this.logMessage(`❌ Parent access failed: ${error.message}`);
+                    console.error('Parent access error:', error);
+                }
+            }
+
+            createProxyVisualization() {
+                // Create a proxy that converts 3D visualization data to 2D
+                return (poseData) => {
+                    // Send pose data to parent for 3D rendering
+                    this.sendToParent('apply_pose_3d', { pose: poseData });
+                    
+                    // Also do local 2D visualization
+                    this.updateLocal2DVisualization(poseData);
+                };
+            }
+           
+            updateVisualization() {
+                const pose = this.getCurrentPose();
+                if (window.shared3D && window.shared3D.isInitialized) {
+                    window.shared3D.applyBVHFrame(pose);
+                    //this.logMessage('🎭 Updated local 3D visualizations');
+                }
+                // No more 2D fallback or complex logic needed.
+            }
+
+            updateLocal2DVisualization(poseData) {
+                // The parent already updates the shared 3D scene when we call parentVisualization.applyBVHFrame()
+                // Our local renderer automatically shows the updated scene!
+                
+                if (window.shared3D && window.shared3D.isInitialized) {
+                    // No need to do anything - the shared scene is already updated by the parent!
+                    if (Math.random() < 0.005) { // Occasional debug
+                        console.log('🎭 Shared 3D scene automatically updated by parent');
+                    }
+                } else {
+                    // Fallback to basic 2D only if 3D sharing failed
+                    this.updateVisualizationFromPose(poseData);
+                    console.log('🎨 Using 2D fallback - 3D sharing not available');
+                }
+            }
+
+
+            // ✅ Add this helper function
+            showDefaultSkeleton() {
+                const defaultPositions = {
+                    'joint-Hips': { x: 600, y: 200 },
+                    'joint-Head': { x: 600, y: 130 },
+                    'joint-Chest': { x: 600, y: 160 },
+                    'joint-Chest4': { x: 600, y: 140 },
+                    'joint-LeftWrist': { x: 550, y: 180 },
+                    'joint-RightWrist': { x: 650, y: 180 },
+                    'joint-LeftToe': { x: 580, y: 280 },
+                    'joint-RightToe': { x: 620, y: 280 }
+                };
+                
+                for (const [jointId, position] of Object.entries(defaultPositions)) {
+                    const joint = document.getElementById(jointId);
+                    if (joint) {
+                        joint.style.left = `${position.x - joint.offsetWidth / 2}px`;
+                        joint.style.top = `${position.y - joint.offsetHeight / 2}px`;
+                    }
+                }
+            }
+
+            updateVisualizationFromPose(poseData) {
+                if (!poseData || poseData.length < 6) {
+                    console.warn('⚠️ Invalid pose data for visualization');
+                    return;
+                }
+                
+                // Extract root motion (first 6 values)
+                const rootX = poseData[0] || 0;
+                const rootY = poseData[1] || 0;  
+                const rootZ = poseData[2] || 0;
+                const rootRotY = (poseData[3] || 0) * Math.PI / 180;
+                const rootRotX = (poseData[4] || 0) * Math.PI / 180;
+                const rootRotZ = (poseData[5] || 0) * Math.PI / 180;
+                
+                // Visualization scaling and centering
+                const visScale = 2.0;
+                const centerX = 600;
+                const centerY = 200;
+                
+                const rootScreenX = centerX + (rootX * visScale);
+                const rootScreenY = centerY + (rootZ * visScale);
+                
+                // Define the BVH joint hierarchy and their expected indices in the pose data
+                const bvhJointMap = {
+                    'Hips': { index: 0, offset: [0, 0], parent: null },
+                    'Chest': { index: 6, offset: [0, -30], parent: 'Hips' },
+                    'Chest2': { index: 9, offset: [0, -25], parent: 'Chest' },
+                    'Chest3': { index: 12, offset: [0, -20], parent: 'Chest2' },
+                    'Chest4': { index: 15, offset: [0, -20], parent: 'Chest3' },
+                    'Neck': { index: 18, offset: [0, -25], parent: 'Chest4' },
+                    'Head': { index: 21, offset: [0, -20], parent: 'Neck' },
+                    
+                    'LeftCollar': { index: 24, offset: [-15, -10], parent: 'Chest4' },
+                    'LeftShoulder': { index: 27, offset: [-30, 0], parent: 'LeftCollar' },
+                    'LeftElbow': { index: 30, offset: [-40, 10], parent: 'LeftShoulder' },
+                    'LeftWrist': { index: 33, offset: [-35, 5], parent: 'LeftElbow' },
+                    
+                    'RightCollar': { index: 36, offset: [15, -10], parent: 'Chest4' },
+                    'RightShoulder': { index: 39, offset: [30, 0], parent: 'RightCollar' },
+                    'RightElbow': { index: 42, offset: [40, 10], parent: 'RightShoulder' },
+                    'RightWrist': { index: 45, offset: [35, 5], parent: 'RightElbow' },
+                    
+                    'LeftHip': { index: 48, offset: [-20, 10], parent: 'Hips' },
+                    'LeftKnee': { index: 51, offset: [0, 60], parent: 'LeftHip' },
+                    'LeftAnkle': { index: 54, offset: [0, 50], parent: 'LeftKnee' },
+                    'LeftToe': { index: 57, offset: [0, 15], parent: 'LeftAnkle' },
+                    
+                    'RightHip': { index: 60, offset: [20, 10], parent: 'Hips' },
+                    'RightKnee': { index: 63, offset: [0, 60], parent: 'RightHip' },
+                    'RightAnkle': { index: 66, offset: [0, 50], parent: 'RightKnee' },
+                    'RightToe': { index: 69, offset: [0, 15], parent: 'RightAnkle' }
+                };
+                
+                // Calculate joint positions using real BVH rotations
+                const jointPositions = {};
+                
+                // Start with root position
+                jointPositions['Hips'] = {
+                    x: rootScreenX,
+                    y: rootScreenY,
+                    rotation: { x: rootRotX, y: rootRotY, z: rootRotZ }
+                };
+                
+                // Calculate all other joint positions
+                for (const [jointName, jointInfo] of Object.entries(bvhJointMap)) {
+                    if (jointName === 'Hips') continue; // Already set
+                    
+                    const dataIndex = jointInfo.index;
+                    let jointRotY = 0, jointRotX = 0, jointRotZ = 0;
+                    
+                    // Extract rotation data if available
+                    if (dataIndex + 2 < poseData.length) {
+                        jointRotY = (poseData[dataIndex] || 0) * Math.PI / 180;
+                        jointRotX = (poseData[dataIndex + 1] || 0) * Math.PI / 180;
+                        jointRotZ = (poseData[dataIndex + 2] || 0) * Math.PI / 180;
+                    }
+                    
+                    // Get parent position
+                    const parent = jointInfo.parent;
+                    const parentPos = jointPositions[parent] || jointPositions['Hips'];
+                    
+                    // Calculate position based on parent + offset + rotation
+                    const baseOffsetX = jointInfo.offset[0];
+                    const baseOffsetY = jointInfo.offset[1];
+                    
+                    // Apply rotation to the offset
+                    const rotatedOffsetX = baseOffsetX * Math.cos(jointRotY) - baseOffsetY * Math.sin(jointRotY);
+                    const rotatedOffsetY = baseOffsetX * Math.sin(jointRotY) + baseOffsetY * Math.cos(jointRotY);
+                    
+                    // Add additional rotation influences
+                    const rotationInfluenceX = Math.sin(jointRotY) * 20;
+                    const rotationInfluenceY = Math.sin(jointRotX) * 15;
+                    
+                    jointPositions[jointName] = {
+                        x: parentPos.x + rotatedOffsetX + rotationInfluenceX,
+                        y: parentPos.y + rotatedOffsetY + rotationInfluenceY,
+                        rotation: { x: jointRotX, y: jointRotY, z: jointRotZ }
+                    };
+                }
+                
+                // Update DOM elements for all joints
+                for (const [jointName, position] of Object.entries(jointPositions)) {
+                    const jointElement = document.getElementById(`joint-${jointName}`);
+                    if (jointElement) {
+                        jointElement.style.left = `${position.x - jointElement.offsetWidth / 2}px`;
+                        jointElement.style.top = `${position.y - jointElement.offsetHeight / 2}px`;
+                        
+                        // Optional: Add rotation visualization
+                        const rotationDegrees = position.rotation.y * 180 / Math.PI;
+                        jointElement.style.transform = `rotate(${rotationDegrees}deg)`;
+                    }
+                }
+                
+                // Update motion path
+                this.motionPath.push({ x: rootScreenX, y: rootScreenY });
+                if (this.motionPath.length > this.maxPathLength) {
+                    this.motionPath.shift();
+                }
+                this.updateMotionPath();
+                           
+                // Draw skeleton bones
+                this.updateSkeletonBones(jointPositions);
+
+                // Update info displays
+                if (this.currentAnimationFromParent) {
+                    document.getElementById('currentAnimInfo').textContent = this.currentAnimationFromParent;
+                }
+                if (this.currentFrameFromParent !== undefined) {
+                    document.getElementById('currentFrameInfo').textContent = this.currentFrameFromParent;
+                }
+                
+                // Debug log (remove after testing)
+                if (Math.floor(Date.now() / 1000) % 3 === 0) { // Log every 3 seconds
+                    console.log('🎭 Full skeleton update:', {
+                        totalJoints: Object.keys(jointPositions).length,
+                        poseDataLength: poseData.length,
+                        rootPosition: [rootX, rootY, rootZ],
+                        sampleJointRotations: {
+                            chest: jointPositions['Chest']?.rotation,
+                            leftShoulder: jointPositions['LeftShoulder']?.rotation
+                        }
+                    });
+                }
+            }
+
+            // Add this new function after updateVisualizationFromPose
+            updateSkeletonBones(jointPositions) {
+                const bonesContainer = document.getElementById('skeleton-bones');
+                if (!bonesContainer) return;
+                
+                // Clear existing bones
+                bonesContainer.innerHTML = '';
+                
+                // Define bone connections (parent -> child relationships)
+                const boneConnections = [
+                    // Spine chain
+                    ['Hips', 'Chest'],
+                    ['Chest', 'Chest2'],
+                    ['Chest2', 'Chest3'],
+                    ['Chest3', 'Chest4'],
+                    ['Chest4', 'Neck'],
+                    ['Neck', 'Head'],
+                    
+                    // Left arm chain
+                    ['Chest4', 'LeftCollar'],
+                    ['LeftCollar', 'LeftShoulder'],
+                    ['LeftShoulder', 'LeftElbow'],
+                    ['LeftElbow', 'LeftWrist'],
+                    
+                    // Right arm chain
+                    ['Chest4', 'RightCollar'],
+                    ['RightCollar', 'RightShoulder'],
+                    ['RightShoulder', 'RightElbow'],
+                    ['RightElbow', 'RightWrist'],
+                    
+                    // Left leg chain
+                    ['Hips', 'LeftHip'],
+                    ['LeftHip', 'LeftKnee'],
+                    ['LeftKnee', 'LeftAnkle'],
+                    ['LeftAnkle', 'LeftToe'],
+                    
+                    // Right leg chain
+                    ['Hips', 'RightHip'],
+                    ['RightHip', 'RightKnee'],
+                    ['RightKnee', 'RightAnkle'],
+                    ['RightAnkle', 'RightToe']
+                ];
+                
+                // Create SVG lines for each bone connection
+                boneConnections.forEach(([parentJoint, childJoint]) => {
+                    const parentPos = jointPositions[parentJoint];
+                    const childPos = jointPositions[childJoint];
+                    
+                    if (parentPos && childPos) {
+                        // Create SVG line element
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', parentPos.x);
+                        line.setAttribute('y1', parentPos.y);
+                        line.setAttribute('x2', childPos.x);
+                        line.setAttribute('y2', childPos.y);
+                        line.setAttribute('stroke', '#00d4ff');
+                        line.setAttribute('stroke-width', '2');
+                        line.setAttribute('opacity', '0.8');
+                        
+                        // Add special styling for different bone types
+                        if (parentJoint === 'Hips' || childJoint === 'Head') {
+                            line.setAttribute('stroke', '#ffff44'); // Yellow for main spine
+                            line.setAttribute('stroke-width', '3');
+                        } else if (parentJoint.includes('Left') || childJoint.includes('Left')) {
+                            line.setAttribute('stroke', '#ff4488'); // Pink for left side
+                        } else if (parentJoint.includes('Right') || childJoint.includes('Right')) {
+                            line.setAttribute('stroke', '#44ff88'); // Green for right side
+                        }
+                        
+                        bonesContainer.appendChild(line);
+                    }
+                });
+            }
+
+            updateMotionPath() {
+                const path = document.getElementById('motionPath');
+                if (!path || this.motionPath.length < 2) return;
+                
+                // Create path with velocity-based styling
+                const pathData = this.motionPath.map((point, i) => {
+                    const command = i === 0 ? 'M' : 'L';
+                    return `${command} ${point.x} ${point.y}`;
+                }).join(' ');
+                
+                path.setAttribute('d', pathData);
+                
+                // Dynamic path styling based on recent motion
+                if (this.motionPath.length > 10) {
+                    const recentPoints = this.motionPath.slice(-10);
+                    const avgVelocity = recentPoints.reduce((sum, p) => sum + (p.velocity || 0), 0) / recentPoints.length;
+                    
+                    const pathWidth = Math.max(1, Math.min(4, avgVelocity * 10));
+                    const pathOpacity = Math.max(0.3, Math.min(0.8, avgVelocity * 2));
+                    
+                    path.setAttribute('stroke-width', pathWidth.toString());
+                    path.setAttribute('opacity', pathOpacity.toString());
+                    
+                    // Color based on speed
+                    if (avgVelocity > 50) {
+                        path.setAttribute('stroke', '#ff4444'); // Fast = red
+                    } else if (avgVelocity > 20) {
+                        path.setAttribute('stroke', '#ffaa00'); // Medium = orange  
+                    } else {
+                        path.setAttribute('stroke', '#00d4ff'); // Slow = blue
+                    }
+                }
+            }
+
+            updateMotionPath() {
+                const path = document.getElementById('motionPath');
+                if (this.motionPath.length > 1) {
+                    const pathData = this.motionPath.map((point, i) => 
+                        `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
+                    ).join(' ');
+                    path.setAttribute('d', pathData);
+                }
+            }
+            
+            updateStatus(message, type) {
+                const statusDiv = document.getElementById('status');
+                statusDiv.textContent = message;
+                statusDiv.className = `status ${type}`;
+                
+                this.logMessage(message);
+            }
+            
+            // Communication functions
+            sendTestMessage() {
+                this.sendToParent('test_message', {
+                    message: 'Hello from BVH Transition System!',
+                    timestamp: new Date().toISOString(),
+                    currentState: {
+                        animation: this.currentAnimation,
+                        frame: this.currentFrame,
+                        isPlaying: this.isPlaying
+                    }
+                });
+                this.logMessage('Test message sent to parent');
+            }
+            
+            requestPoseData() {
+                this.sendToParent('request_pose_data', {
+                    request: 'current_pose_data',
+                    responseFormat: 'bvh_frame'
+                });
+                this.logMessage('Requested pose data from parent');
+            }
+            
+            exportTransitionData() {
+                const transitionData = {
+                    system: 'BVH Transition System',
+                    animations: Object.fromEntries(this.animations),
+                    currentState: {
+                        animation: this.currentAnimation,
+                        frame: this.currentFrame,
+                        isTransitioning: this.isTransitioning
+                    },
+                    settings: {
+                        transitionDuration: this.transitionDuration,
+                        similarityThreshold: this.similarityThreshold
+                    },
+                    motionPath: this.motionPath
+                };
+                
+                // Send to parent
+                this.sendToParent('export_data', transitionData);
+                
+                // Also download locally
+                const blob = new Blob([JSON.stringify(transitionData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'bvh-transition-data.json';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                this.logMessage('Transition data exported');
+            }
+            
+            sendTransitionData() {
+                const transitionCapabilities = {
+                    supportedMethods: ['immediate', 'crossfade', 'smart'],
+                    currentSettings: {
+                        duration: this.transitionDuration,
+                        threshold: this.similarityThreshold
+                    },
+                    availableAnimations: Array.from(this.animations.keys()),
+                    engineStatus: this.searchEngine ? 'ready' : 'not_initialized'
+                };
+                
+                this.sendToParent('transition_capabilities', transitionCapabilities);
+            }
+           
+            handlePoseData(data) {
+                // Log the received data for debugging
+                console.log('📨 Received pose data:', data);
+                
+                if (!data.pose || data.pose.length < 6) {
+                    console.warn('⚠️ Invalid pose data received');
+                    return;
+                }
+                
+                // Store the current pose for real-time visualization
+                this.currentPoseFromParent = data.pose;
+                this.currentFrameFromParent = data.frame || 0;
+                this.currentAnimationFromParent = data.animation || 'unknown';
+                
+                // Update the visualization immediately with the new pose
+                this.updateVisualizationFromPose(data.pose);
+                
+                this.logMessage(`📨 Updated skeleton from parent pose (frame ${data.frame})`);
+            }
+            
+            handleAnimationFrame(data) {
+                // Handle animation frame data from parent
+                if (data.pose && data.pose.length > 0) {
+                    // Use parent's current pose for transition analysis
+                    this.logMessage(`Received frame ${data.frame} from parent`);
+                }
+            }
+
+            handleBVHData(data) {
+                this.logMessage(`📥 Received ${Object.keys(data).length} real BVH animations from parent.`);
+                
+                // 1. Clear out the old animations
+                this.animations.clear();
+                const current_animation_select = document.getElementById('currentAnimation');
+                const target_animation_select = document.getElementById('targetAnimation');
+                current_animation_select.innerHTML = '';
+                target_animation_select.innerHTML = '';
+
+                // 2. Store animation names for debugging
+                const animationNames = [];
+
+                // 3. Populate with the new data
+                for (const animId in data) {
+                    if (data[animId] && data[animId].poses.length > 0) {
+                        this.animations.set(animId, {
+                            id: animId,
+                            poses: data[animId].poses.map(p => new Float32Array(p)),
+                            fps: data[animId].fps || 30,
+                            duration: data[animId].duration || 1.0
+                        });
+
+                        // Create display name
+                        const displayName = animId.replace('_reference.bvh', '').replace(/_/g, ' ');
+                        animationNames.push({ id: animId, display: displayName });
+
+                        // Add to dropdowns
+                        const option1 = document.createElement('option');
+                        option1.value = animId;
+                        option1.textContent = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+                        current_animation_select.appendChild(option1);
+
+                        const option2 = document.createElement('option');
+                        option2.value = animId;
+                        option2.textContent = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+                        target_animation_select.appendChild(option2);
+                    }
+                }
+
+                // 4. ✅ CRITICAL FIX: Set different initial selections
+                if (animationNames.length >= 2) {
+                    current_animation_select.value = animationNames[0].id;
+                    target_animation_select.value = animationNames[1].id;
+                    this.currentAnimationId = animationNames[0].id;
+                    this.logMessage(`🎯 Set current: "${animationNames[0].display}", target: "${animationNames[1].display}"`);
+                } else if (animationNames.length === 1) {
+                    current_animation_select.value = animationNames[0].id;
+                    this.currentAnimationId = animationNames[0].id;
+                    this.logMessage(`⚠️ Only one animation available: "${animationNames[0].display}"`);
+                }
+
+                // 5. Re-initialize the system
+                this.logMessage("🔄 Re-initializing search engine...");
+                this.initializeSystem();
+
+                // 6. ✅ Force update visualization with the new current animation
+                this.currentFrame = 0;
+                this.updateVisualization();
+
+                this.updateStatus(`✅ System updated. Ready to transition with ${this.animations.size} animations.`, 'success');
+                
+                // 7. Debug the loaded data
+                this.debugAnimationData();
+                this.debugCurrentState();
+                this.debugPoseComparison();
+                this.debugTransition();
+            }
+
+            handleAnimationCommand(data) {
+                switch (data.command) {
+                    case 'play':
+                        this.startAnimation();
+                        break;
+                    case 'pause':
+                        this.pauseAnimation();
+                        break;
+                    case 'reset':
+                        this.resetAnimation();
+                        break;
+                    case 'switch':
+                        if (data.animation) {
+                            document.getElementById('currentAnimation').value = data.animation;
+                            this.switchAnimation();
+                        }
+                        break;
+                }
+            }
+        }
+        
+        // Simplified Pose Search Engine
+        class SimplePoseSearchEngine {
+            constructor() {
+                this.animationData = new Map();
+            }
+            
+            async indexAnimations(animations) {
+                for (const animation of animations) {
+                    this.animationData.set(animation.animationId, {
+                        poses: animation.poses,
+                        timestamps: animation.timestamps
+                    });
+                }
+            }
+            
+            async searchSimilarPoses(queryPose, targetAnimation, k = 5) {
+                const targetData = this.animationData.get(targetAnimation);
+                if (!targetData) return [];
+                
+                const distances = [];
+                
+                for (let i = 0; i < targetData.poses.length; i++) {
+                    const distance = this.computeDistance(queryPose, targetData.poses[i]);
+                    distances.push({
+                        distance,
+                        frameIndex: i,
+                        timestamp: targetData.timestamps[i]
+                    });
+                }
+                
+                // Sort by distance and return top k
+                distances.sort((a, b) => a.distance - b.distance);
+                return distances.slice(0, k);
+            }
+            
+            computeDistance(pose1, pose2) {
+                let sum = 0;
+                const length = Math.min(pose1.length, pose2.length);
+                
+                for (let i = 0; i < length; i++) { // BUG: Starts at i=0, including root position
+                    const diff = pose1[i] - pose2[i];
+                    sum += diff * diff;
+                }
+                
+                return Math.sqrt(sum / length);
+            }
+
+            computeDistance_new(pose1, pose2) {
+                let sum = 0;
+                const length = Math.min(pose1.length, pose2.length);
+                
+                // *** FIX: Start loop at index 6 to IGNORE root position/rotation ***
+                // We only care about the similarity of the body's posture.
+                for (let i = 6; i < length; i++) {
+                    const diff = (pose1[i] || 0) - (pose2[i] || 0);
+                    sum += diff * diff;
+                }
+                
+                // Avoid division by zero if there are no rotational channels
+                const rotationalChannels = Math.max(1, length - 6);
+                return Math.sqrt(sum / rotationalChannels);
+            }
+        }
+        
+        // Global functions for UI
+        let transitionSystem;
+        
+        window.initializeSystem = () => transitionSystem.initializeSystem();
+        window.startAnimation = () => transitionSystem.startAnimation();
+        window.pauseAnimation = () => transitionSystem.pauseAnimation();
+        window.resetAnimation = () => transitionSystem.resetAnimation();
+        window.switchAnimation = () => transitionSystem.switchAnimation();
+        window.setCurrentAnimation = () => transitionSystem.setCurrentAnimation();
+        window.performTransition = () => transitionSystem.performTransition();        
+        window.debugTransition = () => transitionSystem.debugTransition();        
+        window.findTransitionPoints = () => transitionSystem.findTransitionPoints();
+        window.sendTestMessage = () => transitionSystem.sendTestMessage();
+        window.requestPoseData = () => transitionSystem.requestPoseData();
+        window.exportTransitionData = () => transitionSystem.exportTransitionData();
+        
+        // Initialize the system
+        document.addEventListener('DOMContentLoaded', () => {
+            transitionSystem = new BVHTransitionSystem();
+        });
+    </script>
+</body>
+</html>
