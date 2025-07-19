@@ -241,7 +241,18 @@
                 <input type="range" id="similarityThreshold" min="0.1" max="1.0" step="0.05" value="0.3">
                 <span id="thresholdValue">0.3</span>
             </div>
-            
+           
+            <div class="control-group">
+                <label>Transition Smoothing (only for Smart Pose Matching + Interpolation):</label>
+                <select id="transitionSmoothing">
+                    <option value="linear">Linear</option>
+                    <option value="easeInOut" selected>Ease In-Out</option>
+                    <option value="easeIn">Ease In</option>
+                    <option value="easeOut">Ease Out</option>
+                    <option value="bounce">Bounce</option>
+                </select>
+            </div>
+
             <div class="control-group">
                 <button onclick="initializeSystem()">🔧 Initialize System</button>
                 <button onclick="startAnimation()">▶️ Start</button>
@@ -535,7 +546,7 @@
                 this.isTransitioning = false;
                 this.isLocalTransition = false; // ✅ New flag to control parent data override
                 this.transitionProgress = 0;
-                this.transitionDuration = 1.0;
+                this.transitionDuration = 3.0;
                 this.currentTransitionPose = null;
                 this.similarityThreshold = 0.3;
                 this.animations = new Map();
@@ -1122,189 +1133,209 @@
                 return anim.poses[Math.floor(this.currentFrame)];
             }
 
-            // The `updateTransition` function handles the interpolation for both crossfade and smart methods
+
             updateTransition(deltaTime) {
                 this.transitionProgress += deltaTime / this.transitionDuration;
-                let t = Math.min(this.transitionProgress, 1.0);
-                
-                // Apply smooth easing (ease-in-out cubic)
-                t = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-                
-                // ✅ Verify we have valid source and target poses
-                if (!this.transitionSource || !this.transitionTarget) {
-                    this.logMessage('❌ Missing transition source or target!');
-                    this.isTransitioning = false;
-                    this.isLocalTransition = false;
-                    return new Float32Array(69).fill(0);
-                }
-                
-                const interpolatedPose = new Float32Array(this.transitionSource.pose.length);
-                for (let i = 0; i < interpolatedPose.length; i++) {
-                    interpolatedPose[i] = (1 - t) * this.transitionSource.pose[i] + t * this.transitionTarget.pose[i];
-                }
-                
-                // Update progress display
-                const progressPercent = Math.round(this.transitionProgress * 100);
-                document.getElementById('transitionProgress').textContent = `${progressPercent}%`;
-                
-                // ✅ Debug logging (occasional)
-                if (progressPercent % 20 === 0 && Math.random() < 0.1) { // Every 20% with 10% chance
-                    this.logMessage(`🔄 Transition progress: ${progressPercent}% (t=${t.toFixed(2)})`);
-                }
                 
                 if (this.transitionProgress >= 1.0) {
-                    // ✅ Transition complete - reset all flags
+                    // ✅ Transition complete
                     this.isTransitioning = false;
                     this.isLocalTransition = false;
                     this.transitionProgress = 0;
                     
-                    // Set the current animation state
                     this.currentAnimationId = this.transitionTarget.animId;
                     this.currentFrame = this.transitionTarget.frameIndex || 0;
                     
                     this.updateStatus(`✅ Transition to ${this.currentAnimationId} complete.`, 'success');
                     document.getElementById('transitionProgress').textContent = '0%';
                     
-                    this.logMessage(`🎯 Transition completed. Now playing: ${this.currentAnimationId}`);
-            
-                    // *** SEND COMPLETION MESSAGE TO PARENT ***
-                    const finalAnimId = this.transitionTarget.animId;
-                    this.sendToParent('transition_complete', { to: finalAnimId });
-                    this.updateStatus(`✅ Transition to ${finalAnimId} complete.`, 'success');
-
-                    // ✅ Clean up transition objects
-                    this.transitionSource = null;
+                    this.sendToParent('transition_complete', { to: this.currentAnimationId });
+                    
+                    // Clean up
                     this.transitionTarget = null;
+                    
+                    this.logMessage(`🎯 Transition completed. Now playing: ${this.currentAnimationId}`);
                 }
                 
-                return interpolatedPose;
+                // Update progress display
+                const progressPercent = Math.round(this.transitionProgress * 100);
+                document.getElementById('transitionProgress').textContent = `${progressPercent}%`;
+                
+                // ✅ The actual interpolation is now handled in getCurrentPose()
             }
 
             getCurrentPose() {
-                // If a transition is in progress, return the interpolated pose.
-                if (this.isTransitioning && this.currentTransitionPose) {
-                    return this.currentTransitionPose;
+                const sourceAnim = this.animations.get(this.currentAnimationId);
+                if (!sourceAnim) return new Float32Array(72).fill(0);
+
+                // ✅ ALWAYS get the current pose from the playing animation
+                const frameIndex = Math.floor(this.currentFrame);
+                const nextFrameIndex = (frameIndex + 1) % sourceAnim.poses.length;
+                const t_frame = this.currentFrame - frameIndex;
+                
+                // Interpolate between current and next frame for smooth playback
+                const currentFramePose = sourceAnim.poses[frameIndex];
+                const nextFramePose = sourceAnim.poses[nextFrameIndex];
+                
+                const sourcePose = new Float32Array(currentFramePose.length);
+                for (let i = 0; i < currentFramePose.length; i++) {
+                    sourcePose[i] = currentFramePose[i] + (nextFramePose[i] - currentFramePose[i]) * t_frame;
                 }
 
-                const animation = this.animations.get(this.currentAnimationId);
+                if (!this.isTransitioning) {
+                    return sourcePose; // Return the smoothly interpolated pose for normal playback
+                }
+
+                // --- TRANSITION LOGIC WITH DYNAMIC SOURCE ---
+                let t_blend = Math.min(this.transitionProgress, 1.0);
                 
-                // CRITICAL FIX: If animation or poses are missing, return a default array.
-                if (!animation || !animation.poses || animation.poses.length === 0) {
-                    return new Float32Array(69).fill(0); // Return a safe, zeroed pose.
+                // Apply smoothing based on selected method
+                const smoothingType = document.getElementById('transitionSmoothing').value;
+                switch (smoothingType) {
+                    case 'linear':
+                        // t_blend remains as is
+                        break;
+                    case 'easeIn':
+                        t_blend = t_blend * t_blend * t_blend;
+                        break;
+                    case 'easeOut':
+                        t_blend = 1 - Math.pow(1 - t_blend, 3);
+                        break;
+                    case 'easeInOut':
+                        t_blend = t_blend < 0.5 ? 4 * t_blend * t_blend * t_blend : 1 - Math.pow(-2 * t_blend + 2, 3) / 2;
+                        break;
+                    case 'bounce':
+                        t_blend = t_blend < 0.5 ? 8 * t_blend * t_blend * t_blend * t_blend : 1 - Math.pow(-2 * t_blend + 2, 4) / 2;
+                        break;
+                }
+
+                const targetPose = this.transitionTarget.pose;
+                const interpolatedPose = new Float32Array(sourcePose.length);
+                
+                // ✅ Use parent's THREE.js for consistent quaternion operations
+                const THREE = window.parent.THREE;
+                if (!THREE) {
+                    // Fallback to linear interpolation if THREE.js not available
+                    for (let i = 0; i < sourcePose.length; i++) {
+                        interpolatedPose[i] = (1 - t_blend) * (sourcePose[i] || 0) + t_blend * (targetPose[i] || 0);
+                    }
+                    return interpolatedPose;
                 }
                 
+                const q1 = new THREE.Quaternion();
+                const q2 = new THREE.Quaternion();
+                const euler1 = new THREE.Euler();
+                const euler2 = new THREE.Euler();
+                const eulerResult = new THREE.Euler();
+
+                // ✅ 1. Interpolate Root Position with slight arc for natural movement
+                for (let i = 0; i < 3; i++) {
+                    if (i === 1) { // Y position - add slight arc
+                        const sourceY = sourcePose[i] || 0;
+                        const targetY = targetPose[i] || 0;
+                        const arcHeight = Math.abs(sourceY - targetY) * 0.1; // 10% of height difference
+                        const midY = Math.max(sourceY, targetY) + arcHeight;
+                        
+                        // Bezier curve through midpoint
+                        const u = 1 - t_blend;
+                        interpolatedPose[i] = u * u * sourceY + 2 * u * t_blend * midY + t_blend * t_blend * targetY;
+                    } else {
+                        interpolatedPose[i] = (1 - t_blend) * (sourcePose[i] || 0) + t_blend * (targetPose[i] || 0);
+                    }
+                }
+
+                // ✅ 2. Interpolate all rotations using proper quaternion SLERP
+                for (let i = 3; i < sourcePose.length; i += 3) {
+                    if (i + 2 >= sourcePose.length) break;
+
+                    // ✅ Convert BVH Euler angles to quaternions (YXZ order is common in BVH)
+                    const sourceY = (sourcePose[i] || 0) * Math.PI / 180;
+                    const sourceX = (sourcePose[i + 1] || 0) * Math.PI / 180;
+                    const sourceZ = (sourcePose[i + 2] || 0) * Math.PI / 180;
+
+                    const targetY = (targetPose[i] || 0) * Math.PI / 180;
+                    const targetX = (targetPose[i + 1] || 0) * Math.PI / 180;
+                    const targetZ = (targetPose[i + 2] || 0) * Math.PI / 180;
+
+                    // Set Euler angles in YXZ order (common BVH order)
+                    euler1.set(sourceX, sourceY, sourceZ, 'YXZ');
+                    euler2.set(targetX, targetY, targetZ, 'YXZ');
+
+                    // Convert to quaternions
+                    q1.setFromEuler(euler1);
+                    q2.setFromEuler(euler2);
+
+                    // Perform SLERP
+                    q1.slerp(q2, t_blend);
+
+                    // Convert back to Euler angles
+                    eulerResult.setFromQuaternion(q1, 'YXZ');
+
+                    // Store back in BVH order (Y, X, Z)
+                    interpolatedPose[i]     = eulerResult.y * 180 / Math.PI; // Y
+                    interpolatedPose[i + 1] = eulerResult.x * 180 / Math.PI; // X
+                    interpolatedPose[i + 2] = eulerResult.z * 180 / Math.PI; // Z
+                }
+
+                return interpolatedPose;
+            }
+
+            getCurrentPose_old() {
+                const sourceAnim = this.animations.get(this.currentAnimationId);
+                if (!sourceAnim) return new Float32Array(72).fill(0);
+
                 const frameIndex = Math.floor(this.currentFrame);
-                const nextFrameIndex = (frameIndex + 1) % animation.poses.length;
-                const t = this.currentFrame - frameIndex;
+                const t_frame = this.currentFrame - frameIndex;
+                const sourcePose = sourceAnim.poses[frameIndex];
+
+                if (!this.isTransitioning) {
+                    return sourcePose; // Return the raw, non-interpolated pose for normal playback
+                }
+
+                // --- TRANSITION LOGIC ---
+                let t_blend = Math.min(this.transitionProgress, 1.0);
+                t_blend = t_blend < 0.5 ? 4 * t_blend * t_blend * t_blend : 1 - Math.pow(-2 * t_blend + 2, 3) / 2;
+
+                const targetPose = this.transitionTarget.pose;
+                const interpolatedPose = new Float32Array(sourcePose.length);
+                const THREE = window.parent.THREE;
                 
-                // Linear interpolation between current and next frame
-                const currentFramePose = animation.poses[frameIndex];
-                const nextFramePose = animation.poses[nextFrameIndex];
-                
-                const interpolatedPose = new Float32Array(currentFramePose.length);
-                for (let i = 0; i < currentFramePose.length; i++) {
-                    interpolatedPose[i] = currentFramePose[i] + (nextFramePose[i] - currentFramePose[i]) * t;
+                const q1 = new THREE.Quaternion();
+                const q2 = new THREE.Quaternion();
+                const euler = new THREE.Euler(0, 0, 0, 'YXZ'); // Explicitly set the correct rotation order
+
+                // 1. Interpolate Root Position linearly
+                for (let i = 0; i < 3; i++) {
+                    interpolatedPose[i] = (1 - t_blend) * (sourcePose[i] || 0) + t_blend * (targetPose[i] || 0);
+                }
+
+                // 2. Interpolate all rotations (including root) using Quaternions
+                for (let i = 3; i < sourcePose.length; i += 3) {
+                    if (i + 2 >= sourcePose.length) break;
+
+                    // *** THE FIX: Set Euler angles in the correct Y, X, Z order ***
+                    // BVH data is typically Y-rotation, then X, then Z.
+                    euler.set(sourcePose[i+1] * Math.PI/180, sourcePose[i] * Math.PI/180, sourcePose[i+2] * Math.PI/180, 'YXZ');
+                    q1.setFromEuler(euler);
+
+                    euler.set(targetPose[i+1] * Math.PI/180, targetPose[i] * Math.PI/180, targetPose[i+2] * Math.PI/180, 'YXZ');
+                    q2.setFromEuler(euler);
+
+                    // Perform SLERP
+                    q1.slerp(q2, t_blend);
+
+                    // Convert back to Euler, respecting the YXZ order
+                    euler.setFromQuaternion(q1, 'YXZ');
+                    
+                    // Store back in the correct order for the pose data array
+                    interpolatedPose[i]   = euler.y * 180/Math.PI; // Y
+                    interpolatedPose[i+1] = euler.x * 180/Math.PI; // X
+                    interpolatedPose[i+2] = euler.z * 180/Math.PI; // Z
                 }
                 
                 return interpolatedPose;
             }
-      
 
-            getCurrentPose_new() {
-                const sourceAnim = this.animations.get(this.currentAnimationId);
-                if (!sourceAnim) return new Float32Array(72).fill(0);
-
-                const sourcePose = sourceAnim.poses[Math.floor(this.currentFrame)];
-
-                if (this.isTransitioning) {
-                    let t = Math.min(this.transitionProgress, 1.0);
-                    // Apply smooth easing
-                    t = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-                    const targetPose = this.transitionTarget.pose;
-                    const interpolatedPose = new Float32Array(sourcePose.length);
-
-                    // --- EULER TO QUATERNION CONVERSION (Simplified) ---
-                    const eulerToQuat = (x, y, z) => {
-                        const cx = Math.cos(x * 0.5), sx = Math.sin(x * 0.5);
-                        const cy = Math.cos(y * 0.5), sy = Math.sin(y * 0.5);
-                        const cz = Math.cos(z * 0.5), sz = Math.sin(z * 0.5);
-                        return [
-                            sx * cy * cz - cx * sy * sz, // qx
-                            cx * sy * cz + sx * cy * sz, // qy
-                            cx * cy * sz - sx * sy * cz, // qz
-                            cx * cy * cz + sx * sy * sz  // qw
-                        ];
-                    };
-
-                    // --- SLERP (Spherical Linear Interpolation) ---
-                    const slerp = (q1, q2, t) => {
-                        let dot = q1[0]*q2[0] + q1[1]*q2[1] + q1[2]*q2[2] + q1[3]*q2[3];
-                        if (dot < 0) {
-                            q2 = q2.map(v => -v);
-                            dot = -dot;
-                        }
-                        if (dot > 0.9995) {
-                           return q1.map((v, i) => v + t * (q2[i] - v));
-                        }
-                        const theta_0 = Math.acos(dot);
-                        const theta = theta_0 * t;
-                        const sin_theta = Math.sin(theta);
-                        const sin_theta_0 = Math.sin(theta_0);
-                        const s0 = Math.cos(theta) - dot * sin_theta / sin_theta_0;
-                        const s1 = sin_theta / sin_theta_0;
-                        return q1.map((v, i) => (s0 * v) + (s1 * q2[i]));
-                    };
-
-                    // --- QUATERNION TO EULER CONVERSION (YXZ order) ---
-                    const quatToEuler = (q) => {
-                        const [x, y, z, w] = q;
-                        const t0 = 2 * (w * x + y * z);
-                        const t1 = 1 - 2 * (x * x + y * y);
-                        const roll_x = Math.atan2(t0, t1);
-
-                        let t2 = 2 * (w * y - z * x);
-                        t2 = t2 > 1 ? 1 : (t2 < -1 ? -1 : t2);
-                        const pitch_y = Math.asin(t2);
-
-                        const t3 = 2 * (w * z + x * y);
-                        const t4 = 1 - 2 * (y * y + z * z);
-                        const yaw_z = Math.atan2(t3, t4);
-                        return [roll_x, pitch_y, yaw_z];
-                    };
-
-                    // Interpolate root position linearly
-                    for (let i = 0; i < 6; i++) {
-                        interpolatedPose[i] = (1 - t) * (sourcePose[i] || 0) + t * (targetPose[i] || 0);
-                    }
-
-                    // Interpolate all other joint rotations using Quaternions
-                    for (let i = 6; i < sourcePose.length; i += 3) {
-                        if (i + 2 >= sourcePose.length) break;
-
-                        // Convert source and target Euler angles to radians
-                        const sourceRad = [ (sourcePose[i] || 0) * Math.PI/180, (sourcePose[i+1] || 0) * Math.PI/180, (sourcePose[i+2] || 0) * Math.PI/180 ];
-                        const targetRad = [ (targetPose[i] || 0) * Math.PI/180, (targetPose[i+1] || 0) * Math.PI/180, (targetPose[i+2] || 0) * Math.PI/180 ];
-
-                        // Convert to Quaternions
-                        const q1 = eulerToQuat(sourceRad[0], sourceRad[1], sourceRad[2]);
-                        const q2 = eulerToQuat(targetRad[0], targetRad[1], targetRad[2]);
-
-                        // Perform SLERP
-                        const q_interp = slerp(q1, q2, t);
-
-                        // Convert back to Euler angles in degrees
-                        const e_interp = quatToEuler(q_interp).map(v => v * 180/Math.PI);
-
-                        interpolatedPose[i] = e_interp[0];
-                        interpolatedPose[i+1] = e_interp[1];
-                        interpolatedPose[i+2] = e_interp[2];
-                    }
-                    return interpolatedPose;
-                }
-
-                return sourcePose;
-            }
 
             setupParentVisualization() {
                 // Check if parent has the visualization functions
